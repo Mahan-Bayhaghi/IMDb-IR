@@ -1,4 +1,4 @@
-from requests import get
+import requests
 from bs4 import BeautifulSoup
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -11,7 +11,8 @@ class IMDbCrawler:
     put your own user agent in the headers
     """
     headers = {
-        'User-Agent': None
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
+        # 'Accept': 'application/json',
     }
     top_250_URL = 'https://www.imdb.com/chart/top/'
 
@@ -90,7 +91,7 @@ class IMDbCrawler:
                 return response
             else:
                 print(f'Failed to crawl {URL}.\nStatus code: {response.status_code}')
-        except Exception as e :
+        except Exception as e:
             print(f'Failed to crawl {URL}. Exception: {str(e)}')
         return None
 
@@ -99,7 +100,6 @@ class IMDbCrawler:
         Extract the top 250 movies from the top 250 page and use them as seed for the crawler to start crawling.
         """
         # TODO update self.not_crawled and self.added_ids
-
 
     def get_imdb_instance(self):
         return {
@@ -220,10 +220,12 @@ class IMDbCrawler:
             The URL of the summary page
         """
         try:
-            # TODO
-            pass
+            movie_id = IMDbCrawler.get_id_from_URL(url)
+            plot_summary_url = f"https://www.imdb.com/title/{movie_id}/plotsummary"
+            return plot_summary_url
         except:
             print("failed to get summary link")
+            return None
 
     def get_review_link(url):
         """
@@ -233,10 +235,12 @@ class IMDbCrawler:
         https://www.imdb.com/title/tt0111161/reviews is the review page
         """
         try:
-            # TODO
-            pass
+            movie_id = IMDbCrawler.get_id_from_URL(url)
+            reviews_url = f"https://www.imdb.com/title/{movie_id}/reviews"
+            return reviews_url
         except:
             print("failed to get review link")
+            return None
 
     def get_title(soup):
         """
@@ -253,10 +257,13 @@ class IMDbCrawler:
 
         """
         try:
-            # TODO
-            pass
+            json_ld_script = soup.find('script', type='application/ld+json').string
+            json_data = json.loads(json_ld_script)
+            title = json_data.get('name', None)
+            return title
         except:
             print("failed to get title")
+            return None
 
     def get_first_page_summary(soup):
         """
@@ -565,7 +572,28 @@ class IMDbCrawler:
             print("failed to get gross worldwide")
 
 
+# my test methods
+def test_get_title(url):
+    try:
+        response = requests.get(url, headers=IMDbCrawler.headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            title = IMDbCrawler.get_title(soup)
+            # we expect it to be Dune: Part One
+            print("Title:", title)
+        else:
+            print(f"Failed to fetch data from {url}. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
+def soup_extractions():
+    dune_url = "https://www.imdb.com/title/tt1160419/" # dune :)
+    test_get_title(dune_url)
+
+
 def main():
+    soup_extractions()
     imdb_crawler = IMDbCrawler(crawling_threshold=600)
     # imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
