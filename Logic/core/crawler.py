@@ -86,7 +86,7 @@ class IMDbCrawler:
             The response of the get request
         """
         try:
-            response = get(URL, headers=self.headers)
+            response = requests.get(URL, headers=self.headers)
             if response.status_code == 200:
                 return response
             else:
@@ -279,10 +279,13 @@ class IMDbCrawler:
             The first page summary of the movie
         """
         try:
-            # TODO
-            pass
+            json_ld_script = soup.find('script', type='application/ld+json').string
+            json_data = json.loads(json_ld_script)
+            description = json_data.get('description', None)
+            return description
         except:
             print("failed to get first page summary")
+            return None
 
     def get_director(soup):
         """
@@ -298,10 +301,13 @@ class IMDbCrawler:
             The directors of the movie
         """
         try:
-            # TODO
-            pass
+            json_ld_script = soup.find('script', type='application/ld+json').string
+            json_data = json.loads(json_ld_script)
+            directors = json_data.get('director', None)
+            return directors
         except:
             print("failed to get director")
+            return None
 
     def get_stars(soup):
         """
@@ -317,7 +323,10 @@ class IMDbCrawler:
             The stars of the movie
         """
         try:
-            # TODO
+            json_ld_script = soup.find('script', type='application/ld+json').string
+            json_data = json.loads(json_ld_script)
+            actors = json_data.get('actor', None)
+            return actors
             pass
         except:
             print("failed to get stars")
@@ -572,24 +581,26 @@ class IMDbCrawler:
             print("failed to get gross worldwide")
 
 
-# my test methods
-def test_get_title(url):
+# testing soup extractions
+def soup_extractions():
+    url = "https://www.imdb.com/title/tt1160419/"  # dune :)
+    # url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
     try:
         response = requests.get(url, headers=IMDbCrawler.headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             title = IMDbCrawler.get_title(soup)
-            # we expect it to be Dune: Part One
+            first_page_summary = IMDbCrawler.get_first_page_summary(soup)
+            directors = IMDbCrawler.get_director(soup)
+            stars = IMDbCrawler.get_stars(soup)
             print("Title:", title)
+            print("First page summary : ", first_page_summary)
+            print("Directors: ", directors)
+            print("Stars: ", stars)
         else:
             print(f"Failed to fetch data from {url}. Status code: {response.status_code}")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
-
-def soup_extractions():
-    dune_url = "https://www.imdb.com/title/tt1160419/" # dune :)
-    test_get_title(dune_url)
 
 
 def main():
