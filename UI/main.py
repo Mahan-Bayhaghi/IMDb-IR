@@ -20,12 +20,12 @@ def search_time(start, end):
 
 
 def search_handling(
-    search_button,
-    search_title_terms,
-    search_summary_terms,
-    search_max_num,
-    search_weight,
-    search_method,
+        search_button,
+        search_title_terms,
+        search_summary_terms,
+        search_max_num,
+        search_weight,
+        search_method,
 ):
     if search_button:
         corrected_title = utils.correct_text(search_title_terms, utils.bigram_index)
@@ -35,8 +35,8 @@ def search_handling(
         corrected = corrected_title + " " + corrected_abstract
 
         if (
-            corrected_title != search_title_terms
-            or corrected_abstract != search_summary_terms
+                corrected_title != search_title_terms
+                or corrected_abstract != search_summary_terms
         ):
             st.warning(f"Your search terms were corrected to: {corrected}")
             search_title_terms = corrected_title

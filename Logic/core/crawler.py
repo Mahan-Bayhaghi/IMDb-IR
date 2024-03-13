@@ -24,13 +24,12 @@ class IMDbCrawler:
         crawling_threshold: int
             The number of pages to crawl
         """
-        # TODO
-        self.crawling_threshold = None
-        self.not_crawled = None
-        self.crawled = None
-        self.added_ids = None
-        self.add_list_lock = None
-        self.add_queue_lock = None
+        self.crawling_threshold = crawling_threshold
+        self.not_crawled = deque()
+        self.crawled = set()
+        self.added_ids = set()
+        self.add_list_lock = Lock()
+        self.add_queue_lock = Lock()
 
     def get_id_from_URL(self, URL):
         """
@@ -46,8 +45,11 @@ class IMDbCrawler:
         str
             The id of the site
         """
-        # TODO
-        return URL.split('/')[4]
+        parts = URL.split('/')
+        index = parts.index('title')
+        movie_id = parts[index + 1]
+        movie_id = movie_id.split('?')[0]
+        return movie_id
 
     def write_to_file_as_json(self):
         """
@@ -82,7 +84,14 @@ class IMDbCrawler:
         requests.models.Response
             The response of the get request
         """
-        # TODO
+        try:
+            response = get(URL, headers=self.headers)
+            if response.status_code == 200:
+                return response
+            else:
+                print(f'Failed to crawl {URL}.\nStatus code: {response.status_code}')
+        except Exception as e :
+            print(f'Failed to crawl {URL}. Exception: {str(e)}')
         return None
 
     def extract_top_250(self):
@@ -171,24 +180,28 @@ class IMDbCrawler:
         URL: str
             The URL of the site
         """
-        # TODO
-        movie['title'] = None
-        movie['first_page_summary'] = None
-        movie['release_year'] = None
-        movie['mpaa'] = None
-        movie['budget'] = None
-        movie['gross_worldwide'] = None
-        movie['directors'] = None
-        movie['writers'] = None
-        movie['stars'] = None
-        movie['related_links'] = None
-        movie['genres'] = None
-        movie['languages'] = None
-        movie['countries_of_origin'] = None
-        movie['rating'] = None
-        movie['summaries'] = None
-        movie['synopsis'] = None
-        movie['reviews'] = None
+        try:
+            soup = BeautifulSoup(res.text, 'html.parser')
+            movie['title'] = self.get_title(soup)
+            movie['first_page_summary'] = self.get_first_page_summary(soup)
+            movie['release_year'] = self.get_release_year(soup)
+            movie['mpaa'] = self.get_mpaa(soup)
+            movie['budget'] = self.get_budget(soup)
+            movie['gross_worldwide'] = self.get_gross_worldwide(soup)
+            movie['rating'] = self.get_rating(soup)
+            movie['directors'] = self.get_director(soup)
+            movie['writers'] = self.get_writers(soup)
+            movie['stars'] = self.get_stars(soup)
+            movie['related_links'] = self.get_related_links(soup)
+            movie['genres'] = self.get_genres(soup)
+            movie['languages'] = self.get_languages(soup)
+            movie['countries_of_origin'] = self.get_countries_of_origin(soup)
+            movie['summaries'] = self.get_summary(soup)
+            movie['synopsis'] = self.get_synopsis(soup)
+            movie['reviews'] = self.get_reviews_with_scores(soup)
+
+        except Exception as e:
+            print(f"Failed to extract information from {URL}. Exception: {str(e)}")
 
     def get_summary_link(url):
         """
