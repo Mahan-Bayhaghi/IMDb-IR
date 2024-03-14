@@ -330,7 +330,7 @@ class IMDbCrawler:
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
             json_data = json.loads(json_ld_script)
-            actors = json_data.get('actor', None)   # contains link to actor's page as well as name
+            actors = json_data.get('actor', None)  # contains link to actor's page as well as name
             actors_names = []
             for actor in actors:
                 if actor.get('@type', None) == 'Person':  # don't gather organizations as actor
@@ -356,7 +356,7 @@ class IMDbCrawler:
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
             json_data = json.loads(json_ld_script)
-            writers = json_data.get('creator', None)    # contains link to writer's page as well as name
+            writers = json_data.get('creator', None)  # contains link to writer's page as well as name
             writers_names = []
             for writer in writers:
                 if writer.get('@type', None) == 'Person':  # don't gather organizations as writer
@@ -506,11 +506,12 @@ class IMDbCrawler:
             genres = None
             if script_content:
                 json_data = json.loads(script_content)
-                genres = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get(
-                    'genres',
-                    {}).get('genres',
-                            None)
-            return genres
+                genres = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('genres', {}).get('genres', None)
+                genres_names = []
+                for genre in genres:
+                    genres_names.append(genre.get('id', None))
+                return genres_names
+            return None
         except:
             print("Failed to get generes")
             return None
@@ -618,7 +619,11 @@ class IMDbCrawler:
                 json_data = json.loads(script_content)
                 languages = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
                     'spokenLanguages', {}).get('spokenLanguages', None)
-            return languages
+                languages_names = []
+                for language in languages:
+                    languages_names.append(language.get('text', None))  # id : en , text : English
+                return languages_names
+            return None
         except:
             print("failed to get languages")
             return None
@@ -644,7 +649,11 @@ class IMDbCrawler:
                 json_data = json.loads(script_content)
                 countries = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get(
                     'countriesOfOrigin', {}).get('countries', None)
-            return countries
+                countries_names = []
+                for country in countries:
+                    countries_names.append(country.get('id', None))
+                return countries_names
+            return None
         except:
             print("failed to get countries of origin")
             return None
@@ -670,7 +679,9 @@ class IMDbCrawler:
                 json_data = json.loads(script_content)
                 budget = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
                     'productionBudget', {}).get('budget', None)
-            return budget
+                budget_aggregated = f"{budget.get('amount')} {budget.get('currency')}"
+                return budget_aggregated
+            return None
         except:
             print("failed to get budget")
             return None
@@ -696,7 +707,9 @@ class IMDbCrawler:
                 json_data = json.loads(script_content)
                 gross_worldwide = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
                     'worldwideGross', {}).get('total', None)
-            return gross_worldwide
+                gross_worldwide_aggregated = f"{gross_worldwide.get('amount')} {gross_worldwide.get('currency')}"
+                return gross_worldwide_aggregated
+            return None
             pass
         except:
             print("failed to get gross worldwide")
@@ -705,8 +718,8 @@ class IMDbCrawler:
 
 # testing soup extractions
 def soup_extractions():
-    url = "https://www.imdb.com/title/tt1160419/"  # dune
-    # url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
+    # url = "https://www.imdb.com/title/tt1160419/"  # dune
+    url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
     # url = "https://www.imdb.com/title/tt1832382/"  # a separation
     summary_link = IMDbCrawler.get_summary_link(url)
     reviews_link = IMDbCrawler.get_review_link(url)
