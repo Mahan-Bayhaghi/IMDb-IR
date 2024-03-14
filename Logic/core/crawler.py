@@ -386,10 +386,17 @@ class IMDbCrawler:
             The summary of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'categories' in text)
+            script_content = script_element.text if script_element else None
+            summary = None
+            if script_content:
+                json_data = json.loads(script_content)
+                summary = json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
+                    'categories', {})[0].get('section', {}).get('items', {})[0].get('htmlContent', None)
+            return summary
         except:
             print("failed to get summary")
+            return None
 
     def get_synopsis(soup):
         """
@@ -405,10 +412,17 @@ class IMDbCrawler:
             The synopsis of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'categories' in text)
+            script_content = script_element.text if script_element else None
+            synopsis = None
+            if script_content:
+                json_data = json.loads(script_content)
+                synopsis = json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
+                    'categories',{})[1].get('section', {}).get('items', {})[0].get('htmlContent', None)
+            return synopsis
         except:
             print("failed to get synopsis")
+            return None
 
     def get_reviews_with_scores(soup):
         """
@@ -444,10 +458,19 @@ class IMDbCrawler:
             The genres of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'genres' in text)
+            script_content = script_element.text if script_element else None
+            genres = None
+            if script_content:
+                json_data = json.loads(script_content)
+                genres = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get(
+                    'genres',
+                    {}).get('genres',
+                            None)
+            return genres
         except:
             print("Failed to get generes")
+            return None
 
     def get_rating(soup):
         """
@@ -463,10 +486,18 @@ class IMDbCrawler:
             The rating of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'ratingsSummary' in text)
+            script_content = script_element.text if script_element else None
+            rating = None
+            if script_content:
+                json_data = json.loads(script_content)
+                rating = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('ratingsSummary',
+                                                                                                       {}).get('aggregateRating',
+                                                                                                               None)
+            return rating
         except:
             print("failed to get rating")
+            return None
 
     def get_mpaa(soup):
         """
@@ -632,8 +663,11 @@ def soup_extractions():
     # url = "https://www.imdb.com/title/tt1832382/"  # a separation
     try:
         response = requests.get(url, headers=IMDbCrawler.headers)
+        summary_synopsis_response = requests.get(url+"plotsummary/?ref_=tt_stry_pl", headers=IMDbCrawler.headers)
+
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
+            summary_synopsis_soup = BeautifulSoup(summary_synopsis_response.content, 'html.parser')
 
             title = IMDbCrawler.get_title(soup)
             first_page_summary = IMDbCrawler.get_first_page_summary(soup)
@@ -641,6 +675,11 @@ def soup_extractions():
             stars = IMDbCrawler.get_stars(soup)
             writers = IMDbCrawler.get_writers(soup)
 
+            summary = IMDbCrawler.get_summary(summary_synopsis_soup)
+            synopsis = IMDbCrawler.get_synopsis(summary_synopsis_soup)
+
+            genres = IMDbCrawler.get_genres(soup)
+            rating = IMDbCrawler.get_rating(soup)
             mpaa = IMDbCrawler.get_mpaa(soup)
             release_year = IMDbCrawler.get_release_year(soup)
             languages = IMDbCrawler.get_languages(soup)
@@ -654,6 +693,11 @@ def soup_extractions():
             print("Stars: ", stars)
             print("Writers: ", writers)
 
+            print("Summary: ", summary)
+            print("Synopsis: ", synopsis)
+
+            print("Genres: ", genres)
+            print("Rating: ", rating)
             print("MPAA: ", mpaa)
             print("Release year: ", release_year)
             print("Languages: ", languages)
