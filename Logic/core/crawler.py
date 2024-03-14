@@ -100,7 +100,23 @@ class IMDbCrawler:
         """
         Extract the top 250 movies from the top 250 page and use them as seed for the crawler to start crawling.
         """
-        # TODO update self.not_crawled and self.added_ids
+        try:
+            response = self.crawl(self.top_250_URL)
+            if response:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                script_element = soup.find('script', type='application/json', text=lambda text: 'currentRank' in text)
+                script_content = script_element.text if script_element else None
+                if script_content:
+                    json_data = json.loads(script_content)
+                    all_250_movies = json_data.get('props', {}).get('pageProps', {}).get('pageData', {}).get(
+                        'chartTitles', {}).get('edges', None)
+                    for movie in all_250_movies:
+                        movie_id = movie.get('node', None).get('id', None)
+                        movie_url = f"https://www.imdb.com/title/{movie_id}/"
+                        self.added_ids.add(movie_id)
+                        self.not_crawled.append(movie_url)
+        except Exception as e:
+            print(f"Error extracting top 250 movies: {e}")
 
     def get_imdb_instance(self):
         return {
@@ -773,7 +789,7 @@ def soup_extractions():
 
 
 def main():
-    soup_extractions()
+    # soup_extractions()
     imdb_crawler = IMDbCrawler(crawling_threshold=600)
     # imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
