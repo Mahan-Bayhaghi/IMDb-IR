@@ -304,8 +304,12 @@ class IMDbCrawler:
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
             json_data = json.loads(json_ld_script)
-            directors = json_data.get('director', None)
-            return directors
+            directors = json_data.get('director', None)  # contains names of directors as well as link to director page
+            directors_names = []
+            for director in directors:
+                if director.get('@type', None) == 'Person':  # don't gather organizations as director
+                    directors_names.append(director.get('name'))
+            return directors_names
         except:
             print("failed to get director")
             return None
@@ -326,8 +330,12 @@ class IMDbCrawler:
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
             json_data = json.loads(json_ld_script)
-            actors = json_data.get('actor', None)
-            return actors
+            actors = json_data.get('actor', None)   # contains link to actor's page as well as name
+            actors_names = []
+            for actor in actors:
+                if actor.get('@type', None) == 'Person':  # don't gather organizations as actor
+                    actors_names.append(actor.get('name'))
+            return actors_names
         except:
             print("failed to get stars")
             return None
@@ -348,8 +356,12 @@ class IMDbCrawler:
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
             json_data = json.loads(json_ld_script)
-            writers = json_data.get('creator', None)
-            return writers
+            writers = json_data.get('creator', None)    # contains link to writer's page as well as name
+            writers_names = []
+            for writer in writers:
+                if writer.get('@type', None) == 'Person':  # don't gather organizations as writer
+                    writers_names.append(writer.get('name'))
+            return writers_names
         except:
             print("failed to get writers")
             return None
