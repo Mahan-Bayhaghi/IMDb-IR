@@ -327,9 +327,9 @@ class IMDbCrawler:
             json_data = json.loads(json_ld_script)
             actors = json_data.get('actor', None)
             return actors
-            pass
         except:
             print("failed to get stars")
+            return None
 
     def get_writers(soup):
         """
@@ -345,10 +345,13 @@ class IMDbCrawler:
             The writers of the movie
         """
         try:
-            # TODO
-            pass
+            json_ld_script = soup.find('script', type='application/ld+json').string
+            json_data = json.loads(json_ld_script)
+            writers = json_data.get('creator', None)
+            return writers
         except:
             print("failed to get writers")
+            return None
 
     def get_related_links(soup):
         """
@@ -479,10 +482,18 @@ class IMDbCrawler:
             The MPAA of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'certificate' in text)
+            script_content = script_element.text if script_element else None
+            mpaa = None
+            if script_content:
+                json_data = json.loads(script_content)
+                mpaa = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('certificate',
+                                                                                                       {}).get('rating',
+                                                                                                               None)
+            return mpaa
         except:
             print("failed to get mpaa")
+            return None
 
     def get_release_year(soup):
         """
@@ -498,10 +509,16 @@ class IMDbCrawler:
             The release year of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'releaseDate' in text)
+            script_content = script_element.text if script_element else None
+            year = None
+            if script_content:
+                json_data = json.loads(script_content)
+                year = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('releaseDate', {}).get('year', None)
+            return year
         except:
             print("failed to get release year")
+            return None
 
     def get_languages(soup):
         """
@@ -517,8 +534,14 @@ class IMDbCrawler:
             The languages of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'spokenLanguages' in text)
+            script_content = script_element.text if script_element else None
+            languages = None
+            if script_content:
+                json_data = json.loads(script_content)
+                languages = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
+                    'spokenLanguages', {}).get('spokenLanguages', None)
+            return languages
         except:
             print("failed to get languages")
             return None
@@ -537,10 +560,17 @@ class IMDbCrawler:
             The countries of origin of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'countriesOfOrigin' in text)
+            script_content = script_element.text if script_element else None
+            countries = None
+            if script_content:
+                json_data = json.loads(script_content)
+                countries = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get(
+                    'countriesOfOrigin', {}).get('countries', None)
+            return countries
         except:
             print("failed to get countries of origin")
+            return None
 
     def get_budget(soup):
         """
@@ -556,10 +586,16 @@ class IMDbCrawler:
             The budget of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json', text=lambda text: 'productionBudget' in text)
+            script_content = script_element.text if script_element else None
+            budget = None
+            if script_content:
+                json_data = json.loads(script_content)
+                budget = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get('productionBudget', {}).get('budget', None)
+            return budget
         except:
             print("failed to get budget")
+            return None
 
     def get_gross_worldwide(soup):
         """
@@ -575,28 +611,55 @@ class IMDbCrawler:
             The gross worldwide of the movie
         """
         try:
-            # TODO
+            script_element = soup.find('script', type='application/json', text=lambda text: 'worldwideGross' in text)
+            script_content = script_element.text if script_element else None
+            gross_worldwide = None
+            if script_content:
+                json_data = json.loads(script_content)
+                gross_worldwide = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
+                    'worldwideGross', {}).get('total', None)
+            return gross_worldwide
             pass
         except:
             print("failed to get gross worldwide")
+            return None
 
 
 # testing soup extractions
 def soup_extractions():
-    url = "https://www.imdb.com/title/tt1160419/"  # dune :)
+    url = "https://www.imdb.com/title/tt1160419/"  # dune
     # url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
+    # url = "https://www.imdb.com/title/tt1832382/"  # a separation
     try:
         response = requests.get(url, headers=IMDbCrawler.headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
+
             title = IMDbCrawler.get_title(soup)
             first_page_summary = IMDbCrawler.get_first_page_summary(soup)
             directors = IMDbCrawler.get_director(soup)
             stars = IMDbCrawler.get_stars(soup)
+            writers = IMDbCrawler.get_writers(soup)
+
+            mpaa = IMDbCrawler.get_mpaa(soup)
+            release_year = IMDbCrawler.get_release_year(soup)
+            languages = IMDbCrawler.get_languages(soup)
+
+            countries_of_origin = IMDbCrawler.get_countries_of_origin(soup)
+            budget = IMDbCrawler.get_budget(soup)
+            gross_worldwide = IMDbCrawler.get_gross_worldwide(soup)
             print("Title:", title)
             print("First page summary : ", first_page_summary)
             print("Directors: ", directors)
             print("Stars: ", stars)
+            print("Writers: ", writers)
+
+            print("MPAA: ", mpaa)
+            print("Release year: ", release_year)
+            print("Languages: ", languages)
+            print("Countries of origin: ", countries_of_origin)
+            print("Budget: ", budget)
+            print("Gross worldwide: ", gross_worldwide)
         else:
             print(f"Failed to fetch data from {url}. Status code: {response.status_code}")
     except Exception as e:
