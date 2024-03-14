@@ -15,6 +15,7 @@ class IMDbCrawler:
         # 'Accept': 'application/json',
     }
     top_250_URL = 'https://www.imdb.com/chart/top/'
+    MAX_NUMBER_OF_REVIEWS = 5  # max number of reviews gathered for each movie
 
     def __init__(self, crawling_threshold=1000):
         """
@@ -32,7 +33,7 @@ class IMDbCrawler:
         self.add_list_lock = Lock()
         self.add_queue_lock = Lock()
 
-    def get_id_from_URL(self, URL):
+    def get_id_from_URL(URL):
         """
         Get the id from the URL of the site. The id is what comes exactly after title.
         for example the id for the movie https://www.imdb.com/title/tt0111161/?ref_=chttp_t_1 is tt0111161.
@@ -367,10 +368,22 @@ class IMDbCrawler:
             The related links of the movie
         """
         try:
-            # TODO
-            pass
+            script_element = soup.find('script', type='application/json',
+                                       text=lambda text: 'moreLikeThisTitles' in text)
+            script_content = script_element.text if script_element else None
+            related_links = None
+            if script_content:
+                json_data = json.loads(script_content)
+                related_movies = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
+                    'moreLikeThisTitles', {}).get('edges', None)
+                related_links = []
+                for node in related_movies:
+                    movie_id = node.get('node', {}).get('id')
+                    related_links.append(f"https://www.imdb.com/title/{movie_id}/")
+            return related_links
         except:
             print("failed to get related links")
+            return None
 
     def get_summary(soup):
         """
@@ -418,7 +431,7 @@ class IMDbCrawler:
             if script_content:
                 json_data = json.loads(script_content)
                 synopsis = json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
-                    'categories',{})[1].get('section', {}).get('items', {})[0].get('htmlContent', None)
+                    'categories', {})[1].get('section', {}).get('items', {})[0].get('htmlContent', None)
             return synopsis
         except:
             print("failed to get synopsis")
@@ -439,10 +452,28 @@ class IMDbCrawler:
             The reviews of the movie
         """
         try:
-            # TODO
-            pass
+            reviews_with_scores = []
+            review_containers = soup.find_all('div', class_='review-container')
+            reviews_seen = 0
+            for container in review_containers:
+                reviews_seen += 1
+                if reviews_seen > IMDbCrawler.MAX_NUMBER_OF_REVIEWS:
+                    break
+                try:
+                    rating_span = container.find('span', class_='rating-other-user-rating')
+                    if rating_span:
+                        score = rating_span.findNext('span').text.strip()
+                        review_text = container.find('div', class_='text show-more__control')
+                        if review_text:
+                            review = review_text.text.strip()
+                            reviews_with_scores.append([review, score])
+                except:
+                    print("failed to get either review or score")
+                    return None
+            return reviews_with_scores
         except:
             print("failed to get reviews")
+            return None
 
     def get_genres(soup):
         """
@@ -491,9 +522,10 @@ class IMDbCrawler:
             rating = None
             if script_content:
                 json_data = json.loads(script_content)
-                rating = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('ratingsSummary',
-                                                                                                       {}).get('aggregateRating',
-                                                                                                               None)
+                rating = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get(
+                    'ratingsSummary',
+                    {}).get('aggregateRating',
+                            None)
             return rating
         except:
             print("failed to get rating")
@@ -545,7 +577,9 @@ class IMDbCrawler:
             year = None
             if script_content:
                 json_data = json.loads(script_content)
-                year = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('releaseDate', {}).get('year', None)
+                year = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('releaseDate',
+                                                                                                       {}).get('year',
+                                                                                                               None)
             return year
         except:
             print("failed to get release year")
@@ -622,7 +656,8 @@ class IMDbCrawler:
             budget = None
             if script_content:
                 json_data = json.loads(script_content)
-                budget = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get('productionBudget', {}).get('budget', None)
+                budget = json_data.get('props', {}).get('pageProps', {}).get('mainColumnData', {}).get(
+                    'productionBudget', {}).get('budget', None)
             return budget
         except:
             print("failed to get budget")
@@ -661,13 +696,18 @@ def soup_extractions():
     url = "https://www.imdb.com/title/tt1160419/"  # dune
     # url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
     # url = "https://www.imdb.com/title/tt1832382/"  # a separation
+
+    summary_link = IMDbCrawler.get_summary_link(url)
+    reviews_link = IMDbCrawler.get_review_link(url)
     try:
         response = requests.get(url, headers=IMDbCrawler.headers)
-        summary_synopsis_response = requests.get(url+"plotsummary/?ref_=tt_stry_pl", headers=IMDbCrawler.headers)
+        summary_synopsis_response = requests.get(summary_link, headers=IMDbCrawler.headers)
+        reviews_response = requests.get(reviews_link, headers=IMDbCrawler.headers)
 
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             summary_synopsis_soup = BeautifulSoup(summary_synopsis_response.content, 'html.parser')
+            reviews_soup = BeautifulSoup(reviews_response.content, 'html.parser')
 
             title = IMDbCrawler.get_title(soup)
             first_page_summary = IMDbCrawler.get_first_page_summary(soup)
@@ -675,26 +715,30 @@ def soup_extractions():
             stars = IMDbCrawler.get_stars(soup)
             writers = IMDbCrawler.get_writers(soup)
 
+            related_links = IMDbCrawler.get_related_links(soup)
             summary = IMDbCrawler.get_summary(summary_synopsis_soup)
             synopsis = IMDbCrawler.get_synopsis(summary_synopsis_soup)
+            reviews_with_score = IMDbCrawler.get_reviews_with_scores(reviews_soup)
 
             genres = IMDbCrawler.get_genres(soup)
             rating = IMDbCrawler.get_rating(soup)
             mpaa = IMDbCrawler.get_mpaa(soup)
             release_year = IMDbCrawler.get_release_year(soup)
             languages = IMDbCrawler.get_languages(soup)
-
             countries_of_origin = IMDbCrawler.get_countries_of_origin(soup)
             budget = IMDbCrawler.get_budget(soup)
             gross_worldwide = IMDbCrawler.get_gross_worldwide(soup)
+
             print("Title:", title)
             print("First page summary : ", first_page_summary)
             print("Directors: ", directors)
             print("Stars: ", stars)
             print("Writers: ", writers)
 
+            print("Related links: ", related_links)
             print("Summary: ", summary)
             print("Synopsis: ", synopsis)
+            print("Reviews with score: ", reviews_with_score)
 
             print("Genres: ", genres)
             print("Rating: ", rating)
