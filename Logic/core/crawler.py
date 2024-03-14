@@ -696,30 +696,26 @@ def soup_extractions():
     url = "https://www.imdb.com/title/tt1160419/"  # dune
     # url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
     # url = "https://www.imdb.com/title/tt1832382/"  # a separation
-
     summary_link = IMDbCrawler.get_summary_link(url)
     reviews_link = IMDbCrawler.get_review_link(url)
     try:
         response = requests.get(url, headers=IMDbCrawler.headers)
         summary_synopsis_response = requests.get(summary_link, headers=IMDbCrawler.headers)
         reviews_response = requests.get(reviews_link, headers=IMDbCrawler.headers)
-
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             summary_synopsis_soup = BeautifulSoup(summary_synopsis_response.content, 'html.parser')
             reviews_soup = BeautifulSoup(reviews_response.content, 'html.parser')
-
+            # testing each method
             title = IMDbCrawler.get_title(soup)
             first_page_summary = IMDbCrawler.get_first_page_summary(soup)
             directors = IMDbCrawler.get_director(soup)
             stars = IMDbCrawler.get_stars(soup)
             writers = IMDbCrawler.get_writers(soup)
-
             related_links = IMDbCrawler.get_related_links(soup)
             summary = IMDbCrawler.get_summary(summary_synopsis_soup)
             synopsis = IMDbCrawler.get_synopsis(summary_synopsis_soup)
             reviews_with_score = IMDbCrawler.get_reviews_with_scores(reviews_soup)
-
             genres = IMDbCrawler.get_genres(soup)
             rating = IMDbCrawler.get_rating(soup)
             mpaa = IMDbCrawler.get_mpaa(soup)
@@ -728,18 +724,15 @@ def soup_extractions():
             countries_of_origin = IMDbCrawler.get_countries_of_origin(soup)
             budget = IMDbCrawler.get_budget(soup)
             gross_worldwide = IMDbCrawler.get_gross_worldwide(soup)
-
             print("Title:", title)
             print("First page summary : ", first_page_summary)
             print("Directors: ", directors)
             print("Stars: ", stars)
             print("Writers: ", writers)
-
             print("Related links: ", related_links)
             print("Summary: ", summary)
             print("Synopsis: ", synopsis)
             print("Reviews with score: ", reviews_with_score)
-
             print("Genres: ", genres)
             print("Rating: ", rating)
             print("MPAA: ", mpaa)
