@@ -12,7 +12,7 @@ def check_field_types(json_file_path, expected_fields):
     for movie in data:
         for field, expected_type in expected_fields.items():
             assert (
-                field in movie
+                    field in movie
             ), f'Expected field {field} not found in movie {movie["id"]}'
             if expected_type is not None:
                 assert isinstance(

@@ -69,14 +69,19 @@ class IMDbCrawler:
         """
         Read the crawled files from json
         """
-        # TODO
-        with open('IMDB_crawled.json', 'r') as f:
-            self.crawled = None
-
-        with open('IMDB_not_crawled.json', 'w') as f:
-            self.not_crawled = None
-
-        self.added_ids = None
+        with open('../IMDB_crawled.json', 'r') as f:
+            IMDB_crawled = json.load(f)
+            already_crawled = 0
+            for crawled_movie in IMDB_crawled:
+                movie_id = crawled_movie.get('id', None)
+                self.added_ids.add(movie_id)
+                self.crawled.add(f"https://www.imdb.com/title/{movie_id}/")
+                self.all_movies.append(crawled_movie)
+                already_crawled += 1
+            print(f"loaded {already_crawled} crawled movies")
+        # with open('../IMDB_not_crawled.json', 'w') as f:
+        #     self.not_crawled = None
+        # self.added_ids = None
 
     def crawl(self, URL):
         """
@@ -158,7 +163,6 @@ class IMDbCrawler:
         You are free to use it or not. If used, not to forget safe access to the shared resources.
         """
         self.extract_top_250()
-        i = 1
         futures = []
         crawled_counter = 0
 
@@ -193,9 +197,9 @@ class IMDbCrawler:
             related_links = IMDbCrawler.get_related_links(soup)
             with self.add_queue_lock:
                 for link in related_links:
-                    if link not in self.added_ids:
+                    if link not in self.crawled:
                         self.not_crawled.append(link)
-                        self.added_ids.add(link)
+                        self.added_ids.add(IMDbCrawler.get_id_from_URL(link))
             with self.add_queue_lock:
                 self.crawled.add(URL)
         else:
@@ -762,9 +766,7 @@ class IMDbCrawler:
 # testing soup extractions
 def soup_extractions():
     # url = "https://www.imdb.com/title/tt1160419/"  # dune
-    url = "https://www.imdb.com/title/tt4154796/"  # end game, multiple directors
-    # url = "https://www.imdb.com/title/tt1832382/"  # a separation
-    url = "https://www.imdb.com/title/tt0317705/"  # The Incredibles
+    url = "https://www.imdb.com/title/tt1832382/"  # a separation
     summary_link = IMDbCrawler.get_summary_link(url)
     reviews_link = IMDbCrawler.get_review_link(url)
     try:
@@ -816,12 +818,33 @@ def soup_extractions():
         print(f"An error occurred: {str(e)}")
 
 
+def convert_fields_to_string(filepath):
+    try:
+        with open(filepath, 'r', encoding="utf8") as file:
+            data = json.load(file)
+        for movie in data:
+            movie['first_page_summary'] = str(movie.get('first_page_summary', ''))
+            movie['mpaa'] = str(movie.get('mpaa', ''))
+            movie['budget'] = str(movie.get('budget', ''))
+            movie['gross_worldwide'] = str(movie.get('gross_worldwide', ''))
+            movie['summaries'] = str(movie.get('summaries', ''))
+            movie['synopsis'] = str(movie.get('synopsis', ''))
+            movie['release_year'] = str(movie.get('release_year', ''))
+            movie['rating'] = str(movie.get('rating', ''))
+        with open(filepath, 'w') as file:
+            json.dump(data, file, indent=4)
+        print(f"Successfully converted fields to string and wrote to {filepath}")
+    except Exception as e:
+        print(f"Failed to convert fields to string and write to JSON file. Exception: {e}")
+
+
 def main():
+    # convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
-    imdb_crawler = IMDbCrawler(crawling_threshold=300)
-    # imdb_crawler.read_from_file_as_json()
-    imdb_crawler.start_crawling()
-    imdb_crawler.write_to_file_as_json()
+    imdb_crawler = IMDbCrawler(crawling_threshold=1200)
+    imdb_crawler.read_from_file_as_json()
+    # imdb_crawler.start_crawling()
+    # imdb_crawler.write_to_file_as_json()
     print("crawling done")
 
 
