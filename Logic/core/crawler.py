@@ -85,13 +85,14 @@ class IMDbCrawler:
         """
         Read the crawled files from json
         """
+        self.all_movies = []
         with open('../IMDB_crawled.json', 'r') as f:
             IMDB_crawled = json.load(f)
             already_crawled = 0
             for crawled_movie in IMDB_crawled:
                 movie_id = crawled_movie.get('id', None)
                 self.added_ids.add(movie_id)
-                self.crawled.add(IMDB_crawled.get_URL_from_id(movie_id))
+                self.crawled.add(IMDbCrawler.get_URL_from_id(movie_id))
                 self.all_movies.append(crawled_movie)
                 already_crawled += 1
             print(f"loaded {already_crawled} crawled movies")
@@ -184,10 +185,11 @@ class IMDbCrawler:
 
         with ThreadPoolExecutor(max_workers=20) as executor:
             while len(self.not_crawled) > 0 and crawled_counter < self.crawling_threshold:
-                print(f"len of self.not_crawled :\t {len(self.not_crawled)}")
+                # print(f"len of self.not_crawled :\t {len(self.not_crawled)}")
                 url = self.not_crawled.popleft()
-                futures.append(executor.submit(self.crawl_page_info, url))
-                crawled_counter += 1
+                if url not in self.crawled:
+                    futures.append(executor.submit(self.crawl_page_info, url))
+                    crawled_counter += 1
                 if len(self.not_crawled) == 0:
                     wait(futures)
                     futures = []
@@ -859,8 +861,8 @@ def convert_fields_to_string(filepath):
 def main():
     # convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
-    imdb_crawler = IMDbCrawler(crawling_threshold=30)
-    # imdb_crawler.read_from_file_as_json()
+    imdb_crawler = IMDbCrawler(crawling_threshold=20)
+    imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
     print("crawling done")
