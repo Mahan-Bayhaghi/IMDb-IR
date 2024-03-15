@@ -20,12 +20,12 @@ def search_time(start, end):
 
 
 def search_handling(
-        search_button,
-        search_title_terms,
-        search_summary_terms,
-        search_max_num,
-        search_weight,
-        search_method,
+    search_button,
+    search_title_terms,
+    search_summary_terms,
+    search_max_num,
+    search_weight,
+    search_method,
 ):
     if search_button:
         corrected_title = utils.correct_text(search_title_terms, utils.bigram_index)
@@ -35,8 +35,8 @@ def search_handling(
         corrected = corrected_title + " " + corrected_abstract
 
         if (
-                corrected_title != search_title_terms
-                or corrected_abstract != search_summary_terms
+            corrected_title != search_title_terms
+            or corrected_abstract != search_summary_terms
         ):
             st.warning(f"Your search terms were corrected to: {corrected}")
             search_title_terms = corrected_title
@@ -64,7 +64,7 @@ def search_handling(
                 info = utils.get_movie_by_id(result[i][0], utils.movies_dataset)
                 with card[0].container():
                     st.title(info["Title"])
-                    st.markdown(f"[Link to all_movies]({info['URL']})")
+                    st.markdown(f"[Link to movie]({info['URL']})")
                     st.write(f"Relevance Score: {result[i][1]}")
                     st.write(info["Summary"])
                     with st.expander("Cast"):
@@ -91,7 +91,7 @@ def search_handling(
 def main():
     st.title("Search Engine")
     st.write(
-        "This is a simple search engine for IMDB movies. You can search through IMDB dataset and find the most relevant all_movies to your search terms."
+        "This is a simple search engine for IMDB movies. You can search through IMDB dataset and find the most relevant movie to your search terms."
     )
     st.markdown(
         '<span style="color:yellow">Developed By: MIR Team at Sharif University</span>',
@@ -99,7 +99,7 @@ def main():
     )
 
     search_title_terms = st.text_input("Seacrh in title")
-    search_summary_terms = st.text_input("Search in summary of all_movies")
+    search_summary_terms = st.text_input("Search in summary of movie")
     with st.expander("Advanced Search"):
         search_max_num = st.number_input(
             "Maximum number of results", min_value=5, max_value=100, value=10, step=5
