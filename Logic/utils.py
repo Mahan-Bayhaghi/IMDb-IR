@@ -78,12 +78,12 @@ def search(
 
 def get_movie_by_id(id: str, movies_dataset: List[Dict[str, str]]) -> Dict[str, str]:
     """
-    Get movie by its id
+    Get all_movies by its id
 
     Parameters
     ---------------------------------------------------------------------------------------------------
     id: str
-        The id of the movie
+        The id of the all_movies
 
     movies_dataset: List[Dict[str, str]]
         The dataset of movies
@@ -91,11 +91,11 @@ def get_movie_by_id(id: str, movies_dataset: List[Dict[str, str]]) -> Dict[str, 
     Returns
     ----------------------------------------------------------------------------------------------------
     dict
-        The movie with the given id
+        The all_movies with the given id
     """
 
     return {
-        "Title": "This is movie's title",
+        "Title": "This is all_movies's title",
         "Summary": "This is a summary",
         "URL": "https://www.imdb.com/title/tt0111161/",
         "Cast": ["Morgan Freeman", "Tim Robbins"],
