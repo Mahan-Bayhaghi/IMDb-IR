@@ -15,7 +15,7 @@ class IMDbCrawler:
         # 'Accept': 'application/json',
     }
     top_250_URL = 'https://www.imdb.com/chart/top/'
-    MAX_NUMBER_OF_REVIEWS = 5  # max number of reviews gathered for each all_movies
+    MAX_NUMBER_OF_REVIEWS = 20  # max number of reviews gathered for each all_movies
 
     def __init__(self, crawling_threshold=1000):
         """
@@ -54,6 +54,22 @@ class IMDbCrawler:
         movie_id = movie_id.split('?')[0]
         return movie_id
 
+    def get_URL_from_id(id):
+        """
+        Get the URL of movie by its id
+        for example if id of movie is tt0111161 then url is https://www.imdb.com/title/tt0111161/
+
+        Parameters
+        ----------
+        id: str
+            The id of the movie
+        Returns
+        ----------
+        str
+            The url of the movie
+        """
+        return f"https://www.imdb.com/title/{id}/"
+
     def write_to_file_as_json(self):
         """
         Save the crawled files into json
@@ -75,7 +91,7 @@ class IMDbCrawler:
             for crawled_movie in IMDB_crawled:
                 movie_id = crawled_movie.get('id', None)
                 self.added_ids.add(movie_id)
-                self.crawled.add(f"https://www.imdb.com/title/{movie_id}/")
+                self.crawled.add(IMDB_crawled.get_URL_from_id(movie_id))
                 self.all_movies.append(crawled_movie)
                 already_crawled += 1
             print(f"loaded {already_crawled} crawled movies")
@@ -122,7 +138,7 @@ class IMDbCrawler:
                         'chartTitles', {}).get('edges', None)
                     for movie in all_250_movies:
                         movie_id = movie.get('node', None).get('id', None)
-                        movie_url = f"https://www.imdb.com/title/{movie_id}/"
+                        movie_url = IMDbCrawler.get_URL_from_id(movie_id)
                         self.added_ids.add(movie_id)
                         self.not_crawled.append(movie_url)
         except Exception as e:
@@ -436,7 +452,7 @@ class IMDbCrawler:
                 related_links = []
                 for node in related_movies:
                     movie_id = node.get('node', {}).get('id')
-                    related_links.append(f"https://www.imdb.com/title/{movie_id}/")
+                    related_links.append(IMDbCrawler.get_URL_from_id(movie_id))
             return related_links
         except:
             print("failed to get related links")
@@ -458,11 +474,13 @@ class IMDbCrawler:
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'categories' in text)
             script_content = script_element.text if script_element else None
-            summary = None
+            summary = []
             if script_content:
                 json_data = json.loads(script_content)
-                summary = json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
-                    'categories', {})[0].get('section', {}).get('items', {})[0].get('htmlContent', None)
+                summaries_list = json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
+                    'categories', {})[0].get('section', {}).get('items', {})
+                for one_summary in summaries_list:
+                    summary.append(one_summary.get('htmlContent', None))
             return summary
         except:
             print("failed to get summary")
@@ -484,11 +502,11 @@ class IMDbCrawler:
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'categories' in text)
             script_content = script_element.text if script_element else None
-            synopsis = None
+            synopsis = []
             if script_content:
                 json_data = json.loads(script_content)
-                synopsis = json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
-                    'categories', {})[1].get('section', {}).get('items', {})[0].get('htmlContent', None)
+                synopsis.append(json_data.get('props', {}).get('pageProps', {}).get('contentData', {}).get(
+                    'categories', {})[1].get('section', {}).get('items', {})[0].get('htmlContent', None))
             return synopsis
         except:
             print("failed to get synopsis")
@@ -560,7 +578,7 @@ class IMDbCrawler:
                 return genres_names
             return None
         except:
-            print("Failed to get generes")
+            print("Failed to get genres")
             return None
 
     def get_rating(soup):
@@ -586,7 +604,7 @@ class IMDbCrawler:
                     'ratingsSummary',
                     {}).get('aggregateRating',
                             None)
-            return rating
+            return str(rating)
         except:
             print("failed to get rating")
             return None
@@ -640,7 +658,7 @@ class IMDbCrawler:
                 year = json_data.get('props', {}).get('pageProps', {}).get('aboveTheFoldData', {}).get('releaseDate',
                                                                                                        {}).get('year',
                                                                                                                None)
-            return year
+            return str(year)
         except:
             print("failed to get release year")
             return None
@@ -827,8 +845,8 @@ def convert_fields_to_string(filepath):
             movie['mpaa'] = str(movie.get('mpaa', ''))
             movie['budget'] = str(movie.get('budget', ''))
             movie['gross_worldwide'] = str(movie.get('gross_worldwide', ''))
-            movie['summaries'] = str(movie.get('summaries', ''))
-            movie['synopsis'] = str(movie.get('synopsis', ''))
+            movie['summaries'] = list(movie.get('summaries', '').split())
+            movie['synopsis'] = list(movie.get('synopsis', '').split())
             movie['release_year'] = str(movie.get('release_year', ''))
             movie['rating'] = str(movie.get('rating', ''))
         with open(filepath, 'w') as file:
@@ -839,13 +857,13 @@ def convert_fields_to_string(filepath):
 
 
 def main():
-    convert_fields_to_string("../IMDB_crawled.json")
+    # convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
-    imdb_crawler = IMDbCrawler(crawling_threshold=1200)
-    imdb_crawler.read_from_file_as_json()
-    # imdb_crawler.start_crawling()
-    # imdb_crawler.write_to_file_as_json()
-    # print("crawling done")
+    imdb_crawler = IMDbCrawler(crawling_threshold=30)
+    # imdb_crawler.read_from_file_as_json()
+    imdb_crawler.start_crawling()
+    imdb_crawler.write_to_file_as_json()
+    print("crawling done")
 
 
 if __name__ == '__main__':
