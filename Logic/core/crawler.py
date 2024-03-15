@@ -839,13 +839,13 @@ def convert_fields_to_string(filepath):
 
 
 def main():
-    # convert_fields_to_string("../IMDB_crawled.json")
+    convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
     imdb_crawler = IMDbCrawler(crawling_threshold=1200)
     imdb_crawler.read_from_file_as_json()
     # imdb_crawler.start_crawling()
     # imdb_crawler.write_to_file_as_json()
-    print("crawling done")
+    # print("crawling done")
 
 
 if __name__ == '__main__':
