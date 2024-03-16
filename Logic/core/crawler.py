@@ -59,7 +59,7 @@ class IMDbCrawler:
     def get_id_from_URL(URL):
         """
         Get the id from the URL of the site. The id is what comes exactly after title.
-        for example the id for the all_movies https://www.imdb.com/title/tt0111161/?ref_=chttp_t_1 is tt0111161.
+        for example the id for the movie  https://www.imdb.com/title/tt0111161/?ref_=chttp_t_1 is tt0111161.
 
         Parameters
         ----------
@@ -113,7 +113,9 @@ class IMDbCrawler:
             already_crawled = 0
             for crawled_movie in IMDB_crawled:
                 movie_id = crawled_movie.get('id', None)
-                if movie_id not in self.added_ids:
+                if movie_id is None:
+                    continue
+                elif movie_id not in self.added_ids:
                     self.added_ids.add(movie_id)
                     self.crawled.add(IMDbCrawler.get_URL_from_id(movie_id))
                     self.all_movies.append(crawled_movie)
@@ -266,8 +268,8 @@ class IMDbCrawler:
 
     def crawl_page_info(self, URL):
         """
-        Main Logic of the crawler. It crawls the page and extracts the information of the all_movies.
-        Use related links of a all_movies to crawl more movies.
+        Main Logic of the crawler. It crawls the page and extracts the information of the movies.
+        Use related links of a movie to crawl more movies.
         
         Parameters
         ----------
@@ -295,14 +297,14 @@ class IMDbCrawler:
 
     def extract_movie_info(self, res, movie, URL):
         """
-        Extract the information of the all_movies from the response and save it in the all_movies instance.
+        Extract the information of the movie from the response and save it in the movie dict instance.
 
         Parameters
         ----------
         res: requests.models.Response
             The response of the get request
         movie: dict
-            The instance of the all_movies
+            The instance of the movie
         URL: str
             The URL of the site
         """
@@ -339,7 +341,7 @@ class IMDbCrawler:
 
     def get_summary_link(url):
         """
-        Get the link to the summary page of the all_movies
+        Get the link to the summary page of the movie
         Example:
         https://www.imdb.com/title/tt0111161/ is the page
         https://www.imdb.com/title/tt0111161/plotsummary is the summary page
@@ -363,7 +365,7 @@ class IMDbCrawler:
 
     def get_review_link(url):
         """
-        Get the link to the review page of the all_movies
+        Get the link to the review page of the movie
         Example:
         https://www.imdb.com/title/tt0111161/ is the page
         https://www.imdb.com/title/tt0111161/reviews is the review page
@@ -378,7 +380,7 @@ class IMDbCrawler:
 
     def get_title(soup):
         """
-        Get the title of the all_movies from the soup
+        Get the title of the movie from the soup
 
         Parameters
         ----------
@@ -387,7 +389,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The title of the all_movies
+            The title of the movie
 
         """
         try:
@@ -401,7 +403,7 @@ class IMDbCrawler:
 
     def get_first_page_summary(soup):
         """
-        Get the first page summary of the all_movies from the soup
+        Get the first page summary of the movie from the soup
 
         Parameters
         ----------
@@ -410,7 +412,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The first page summary of the all_movies
+            The first page summary of the movie
         """
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
@@ -423,7 +425,7 @@ class IMDbCrawler:
 
     def get_director(soup):
         """
-        Get the directors of the all_movies from the soup
+        Get the directors of the movie from the soup
 
         Parameters
         ----------
@@ -432,7 +434,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The directors of the all_movies
+            The directors of the movie
         """
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
@@ -449,7 +451,7 @@ class IMDbCrawler:
 
     def get_stars(soup):
         """
-        Get the stars of the all_movies from the soup
+        Get the stars of the movie from the soup
 
         Parameters
         ----------
@@ -458,7 +460,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The stars of the all_movies
+            The stars of the movie
         """
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
@@ -475,7 +477,7 @@ class IMDbCrawler:
 
     def get_writers(soup):
         """
-        Get the writers of the all_movies from the soup
+        Get the writers of the movie from the soup
 
         Parameters
         ----------
@@ -484,7 +486,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The writers of the all_movies
+            The writers of the movie
         """
         try:
             json_ld_script = soup.find('script', type='application/ld+json').string
@@ -501,7 +503,7 @@ class IMDbCrawler:
 
     def get_related_links(soup):
         """
-        Get the related links of the all_movies from the More like this section of the page from the soup
+        Get the related links of the movie from the More like this section of the page from the soup
 
         Parameters
         ----------
@@ -510,7 +512,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The related links of the all_movies
+            The related links of the movie
         """
         try:
             script_element = soup.find('script', type='application/json',
@@ -532,7 +534,7 @@ class IMDbCrawler:
 
     def get_summary(soup):
         """
-        Get the summary of the all_movies from the soup
+        Get the summary of the movie from the soup
 
         Parameters
         ----------
@@ -541,7 +543,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The summary of the all_movies
+            The summary of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'categories' in text)
@@ -560,7 +562,7 @@ class IMDbCrawler:
 
     def get_synopsis(soup):
         """
-        Get the synopsis of the all_movies from the soup
+        Get the synopsis of the movie from the soup
 
         Parameters
         ----------
@@ -569,7 +571,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The synopsis of the all_movies
+            The synopsis of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'categories' in text)
@@ -586,7 +588,7 @@ class IMDbCrawler:
 
     def get_reviews_with_scores(soup):
         """
-        Get the reviews of the all_movies from the soup
+        Get the reviews of the movie from the soup
         reviews structure: [[review,score]]
 
         Parameters
@@ -596,7 +598,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[List[str]]
-            The reviews of the all_movies
+            The reviews of the movie
         """
         try:
             reviews_with_scores = []
@@ -624,7 +626,7 @@ class IMDbCrawler:
 
     def get_genres(soup):
         """
-        Get the genres of the all_movies from the soup
+        Get the genres of the movie from the soup
 
         Parameters
         ----------
@@ -633,7 +635,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The genres of the all_movies
+            The genres of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'genres' in text)
@@ -655,7 +657,7 @@ class IMDbCrawler:
 
     def get_rating(soup):
         """
-        Get the rating of the all_movies from the soup
+        Get the rating of the movie from the soup
 
         Parameters
         ----------
@@ -664,7 +666,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The rating of the all_movies
+            The rating of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'ratingsSummary' in text)
@@ -683,7 +685,7 @@ class IMDbCrawler:
 
     def get_mpaa(soup):
         """
-        Get the MPAA of the all_movies from the soup
+        Get the MPAA of the movie from the soup
 
         Parameters
         ----------
@@ -692,7 +694,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The MPAA of the all_movies
+            The MPAA of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'certificate' in text)
@@ -710,7 +712,7 @@ class IMDbCrawler:
 
     def get_release_year(soup):
         """
-        Get the release year of the all_movies from the soup
+        Get the release year of the movie from the soup
 
         Parameters
         ----------
@@ -719,7 +721,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The release year of the all_movies
+            The release year of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'releaseDate' in text)
@@ -737,7 +739,7 @@ class IMDbCrawler:
 
     def get_languages(soup):
         """
-        Get the languages of the all_movies from the soup
+        Get the languages of the movie from the soup
 
         Parameters
         ----------
@@ -746,7 +748,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The languages of the all_movies
+            The languages of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'spokenLanguages' in text)
@@ -767,7 +769,7 @@ class IMDbCrawler:
 
     def get_countries_of_origin(soup):
         """
-        Get the countries of origin of the all_movies from the soup
+        Get the countries of origin of the movie from the soup
 
         Parameters
         ----------
@@ -776,7 +778,7 @@ class IMDbCrawler:
         Returns
         ----------
         List[str]
-            The countries of origin of the all_movies
+            The countries of origin of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'countriesOfOrigin' in text)
@@ -797,7 +799,7 @@ class IMDbCrawler:
 
     def get_budget(soup):
         """
-        Get the budget of the all_movies from box office section of the soup
+        Get the budget of the movie from box office section of the soup
 
         Parameters
         ----------
@@ -806,7 +808,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The budget of the all_movies
+            The budget of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'productionBudget' in text)
@@ -825,7 +827,7 @@ class IMDbCrawler:
 
     def get_gross_worldwide(soup):
         """
-        Get the gross worldwide of the all_movies from box office section of the soup
+        Get the gross worldwide of the movie from box office section of the soup
 
         Parameters
         ----------
@@ -834,7 +836,7 @@ class IMDbCrawler:
         Returns
         ----------
         str
-            The gross worldwide of the all_movies
+            The gross worldwide of the movie
         """
         try:
             script_element = soup.find('script', type='application/json', text=lambda text: 'worldwideGross' in text)
@@ -917,13 +919,25 @@ def has_duplication(filepath):
         for movie in data:
             movie_id = movie.get('id', None)
             if movie_id in seen_ids:
-                print(f"{movie} already seen")
+                print(f"{movie_id} already seen")
             seen_ids.add(movie_id)
     except Exception as e:
         print(f"Failed to convert fields to string and write to JSON file. Exception: {e}")
 
 
 def convert_fields_to_string(filepath):
+    """
+    convert fields of json file to required formats
+
+    Parameters
+    ----------
+    filepath:
+        address of json file
+
+    Returns
+    -------
+
+    """
     try:
         with open(filepath, 'r', encoding="utf8") as file:
             data = json.load(file)
@@ -944,12 +958,10 @@ def convert_fields_to_string(filepath):
 
 
 def main():
-    # convert_fields_to_string("../IMDB_crawled.json")
-    # soup_extractions()
-    # has_duplication("../IMDB_crawled.json")
-    imdb_crawler = IMDbCrawler(crawling_threshold=50)
+    has_duplication("../IMDB_crawled.json")
+    imdb_crawler = IMDbCrawler(crawling_threshold=4)
     imdb_crawler.read_from_file_as_json()
-    imdb_crawler.start_crawling()
+    # imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
     print("crawling done")
 
