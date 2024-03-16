@@ -34,6 +34,28 @@ class IMDbCrawler:
         self.add_queue_lock = Lock()
         self.all_movies = []
 
+        # Define locks
+        self.not_crawled_lock = Lock()
+        self.crawled_lock = Lock()
+        self.added_ids_lock = Lock()
+
+    def cleanse_url(URL):
+        """
+        Clean the given URL form to standard form
+        for example the clean url of https://www.imdb.com/title/tt0111161/?ref_=chttp_t_1 is https://www.imdb.com/title/tt0111161/
+
+        Parameters
+        ----------
+        URL: str
+            The URL of the site
+        Returns
+        ----------
+        str
+            The cleansed URL of site
+        """
+        movie_id = IMDbCrawler.get_id_from_URL(URL)
+        return IMDbCrawler.get_URL_from_id(movie_id)
+
     def get_id_from_URL(URL):
         """
         Get the id from the URL of the site. The id is what comes exactly after title.
@@ -86,15 +108,16 @@ class IMDbCrawler:
         Read the crawled files from json
         """
         self.all_movies = []
-        with open('../IMDB_crawled.json', 'r') as f:
+        with open('../IMDB_crawled.json', 'r', encoding='utf8') as f:
             IMDB_crawled = json.load(f)
             already_crawled = 0
             for crawled_movie in IMDB_crawled:
                 movie_id = crawled_movie.get('id', None)
-                self.added_ids.add(movie_id)
-                self.crawled.add(IMDbCrawler.get_URL_from_id(movie_id))
-                self.all_movies.append(crawled_movie)
-                already_crawled += 1
+                if movie_id not in self.added_ids:
+                    self.added_ids.add(movie_id)
+                    self.crawled.add(IMDbCrawler.get_URL_from_id(movie_id))
+                    self.all_movies.append(crawled_movie)
+                    already_crawled += 1
             print(f"loaded {already_crawled} crawled movies")
         # with open('../IMDB_not_crawled.json', 'w') as f:
         #     self.not_crawled = None
@@ -140,7 +163,7 @@ class IMDbCrawler:
                     for movie in all_250_movies:
                         movie_id = movie.get('node', None).get('id', None)
                         movie_url = IMDbCrawler.get_URL_from_id(movie_id)
-                        self.added_ids.add(movie_id)
+                        # self.added_ids.add(movie_id)
                         self.not_crawled.append(movie_url)
         except Exception as e:
             print(f"Error extracting top 250 movies: {e}")
@@ -185,15 +208,34 @@ class IMDbCrawler:
 
         with ThreadPoolExecutor(max_workers=20) as executor:
             while len(self.not_crawled) > 0 and crawled_counter < self.crawling_threshold:
-                # print(f"len of self.not_crawled :\t {len(self.not_crawled)}")
                 url = self.not_crawled.popleft()
-                if url not in self.crawled:
+                movie_id = IMDbCrawler.get_id_from_URL(url)
+                if not self.is_already_crawled(url, movie_id):
+                    with self.added_ids_lock:
+                        self.added_ids.add(movie_id)
                     futures.append(executor.submit(self.crawl_page_info, url))
                     crawled_counter += 1
-                if len(self.not_crawled) == 0:
-                    wait(futures)
-                    futures = []
             wait(futures)
+
+    def is_already_crawled(self, url, movie_id):
+        """
+        Check if the URL or movie ID has already been crawled.
+
+        Parameters
+        ----------
+        url : str
+            The URL to check.
+        movie_id : str
+            The movie ID to check.
+
+        Returns
+        -------
+        bool
+            True if the URL or movie ID has already been crawled, False otherwise.
+        """
+        # with self.not_crawled_lock:
+        #     with self.crawled_lock:
+        return url in self.crawled or movie_id in self.added_ids
 
     def crawl_page_info(self, URL):
         """
@@ -211,14 +253,15 @@ class IMDbCrawler:
             soup = BeautifulSoup(response.text, 'html.parser')
             movie_info = self.get_imdb_instance()
             self.extract_movie_info(response, movie_info, URL)
-            self.all_movies.append(movie_info)
+            with self.add_list_lock:
+                self.all_movies.append(movie_info)
             related_links = IMDbCrawler.get_related_links(soup)
-            with self.add_queue_lock:
-                for link in related_links:
-                    if link not in self.crawled:
-                        self.not_crawled.append(link)
-                        self.added_ids.add(IMDbCrawler.get_id_from_URL(link))
-            with self.add_queue_lock:
+            with self.not_crawled_lock:
+                    for link in related_links:
+                        cleansed_link = IMDbCrawler.cleanse_url(link)
+                        if cleansed_link not in self.crawled and cleansed_link not in self.not_crawled:
+                            self.not_crawled.append(cleansed_link)
+            with self.crawled_lock:
                 self.crawled.add(URL)
         else:
             print(f"Failed to fetch data from {URL}.")
@@ -787,6 +830,7 @@ class IMDbCrawler:
 def soup_extractions():
     # url = "https://www.imdb.com/title/tt1160419/"  # dune
     url = "https://www.imdb.com/title/tt1832382/"  # a separation
+    url = "https://www.imdb.com/title/tt0095765/"
     summary_link = IMDbCrawler.get_summary_link(url)
     reviews_link = IMDbCrawler.get_review_link(url)
     try:
@@ -861,8 +905,8 @@ def convert_fields_to_string(filepath):
 def main():
     # convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
-    imdb_crawler = IMDbCrawler(crawling_threshold=20)
-    imdb_crawler.read_from_file_as_json()
+    imdb_crawler = IMDbCrawler(crawling_threshold=50)
+    # imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
     print("crawling done")
