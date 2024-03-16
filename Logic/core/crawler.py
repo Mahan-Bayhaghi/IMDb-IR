@@ -162,9 +162,10 @@ class IMDbCrawler:
                         'chartTitles', {}).get('edges', None)
                     for movie in all_250_movies:
                         movie_id = movie.get('node', None).get('id', None)
-                        movie_url = IMDbCrawler.get_URL_from_id(movie_id)
+                        movie_url = IMDbCrawler.cleanse_url(IMDbCrawler.get_URL_from_id(movie_id))
                         # self.added_ids.add(movie_id)
-                        self.not_crawled.append(movie_url)
+                        if movie_url not in self.not_crawled:
+                            self.not_crawled.append(movie_url)
         except Exception as e:
             print(f"Error extracting top 250 movies: {e}")
 
@@ -189,6 +190,25 @@ class IMDbCrawler:
             'synopsis': None,  # List[str]
             'reviews': None,  # List[List[str]]
         }
+
+    def retrieve_related_links(self):
+        """
+        Will be called if there is prior movie datas
+        Retrieves all related links from movie datas that is not crawled yet
+
+        Returns
+        -------
+        list[str]
+            list of all links not crawled yet
+
+        """
+        links = []
+        for movie in self.all_movies:
+            related_links = movie.get('related_links', None)
+            for related_link in related_links:
+                if IMDbCrawler.cleanse_url(related_link) not in self.crawled:
+                    links.append(related_link)
+        return links
 
     def start_crawling(self):
         """
@@ -216,6 +236,10 @@ class IMDbCrawler:
                     futures.append(executor.submit(self.crawl_page_info, url))
                     crawled_counter += 1
                 if len(self.not_crawled) == 0:
+                    if len(self.crawled) > 0:
+                        print("here")
+                        with self.not_crawled_lock:
+                            self.not_crawled += self.retrieve_related_links()
                     wait(futures)
                     futures = []
             wait(futures)
@@ -885,6 +909,20 @@ def soup_extractions():
         print(f"An error occurred: {str(e)}")
 
 
+def has_duplication(filepath):
+    try:
+        with open(filepath, 'r', encoding="utf8") as file:
+            data = json.load(file)
+        seen_ids = set()
+        for movie in data:
+            movie_id = movie.get('id', None)
+            if movie_id in seen_ids:
+                print(f"{movie} already seen")
+            seen_ids.add(movie_id)
+    except Exception as e:
+        print(f"Failed to convert fields to string and write to JSON file. Exception: {e}")
+
+
 def convert_fields_to_string(filepath):
     try:
         with open(filepath, 'r', encoding="utf8") as file:
@@ -908,7 +946,8 @@ def convert_fields_to_string(filepath):
 def main():
     # convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
-    imdb_crawler = IMDbCrawler(crawling_threshold=10)
+    # has_duplication("../IMDB_crawled.json")
+    imdb_crawler = IMDbCrawler(crawling_threshold=50)
     imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
