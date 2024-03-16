@@ -206,7 +206,7 @@ class IMDbCrawler:
         futures = []
         crawled_counter = 0
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             while len(self.not_crawled) > 0 and crawled_counter < self.crawling_threshold:
                 url = self.not_crawled.popleft()
                 movie_id = IMDbCrawler.get_id_from_URL(url)
@@ -215,6 +215,9 @@ class IMDbCrawler:
                         self.added_ids.add(movie_id)
                     futures.append(executor.submit(self.crawl_page_info, url))
                     crawled_counter += 1
+                if len(self.not_crawled) == 0:
+                    wait(futures)
+                    futures = []
             wait(futures)
 
     def is_already_crawled(self, url, movie_id):
@@ -256,11 +259,11 @@ class IMDbCrawler:
             with self.add_list_lock:
                 self.all_movies.append(movie_info)
             related_links = IMDbCrawler.get_related_links(soup)
-            with self.not_crawled_lock:
-                    for link in related_links:
-                        cleansed_link = IMDbCrawler.cleanse_url(link)
-                        if cleansed_link not in self.crawled and cleansed_link not in self.not_crawled:
-                            self.not_crawled.append(cleansed_link)
+            for link in related_links:
+                cleansed_link = IMDbCrawler.cleanse_url(link)
+                with self.not_crawled_lock:
+                    if cleansed_link not in self.crawled and cleansed_link not in self.not_crawled:
+                        self.not_crawled.append(cleansed_link)
             with self.crawled_lock:
                 self.crawled.add(URL)
         else:
@@ -905,8 +908,8 @@ def convert_fields_to_string(filepath):
 def main():
     # convert_fields_to_string("../IMDB_crawled.json")
     # soup_extractions()
-    imdb_crawler = IMDbCrawler(crawling_threshold=50)
-    # imdb_crawler.read_from_file_as_json()
+    imdb_crawler = IMDbCrawler(crawling_threshold=10)
+    imdb_crawler.read_from_file_as_json()
     imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
     print("crawling done")
