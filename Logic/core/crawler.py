@@ -15,7 +15,7 @@ class IMDbCrawler:
         # 'Accept': 'application/json',
     }
     top_250_URL = 'https://www.imdb.com/chart/top/'
-    MAX_NUMBER_OF_REVIEWS = 20  # max number of reviews gathered for each all_movies
+    MAX_NUMBER_OF_REVIEWS = 20  # max number of reviews gathered for each movie
 
     def __init__(self, crawling_threshold=1000):
         """
@@ -33,8 +33,7 @@ class IMDbCrawler:
         self.add_list_lock = Lock()
         self.add_queue_lock = Lock()
         self.all_movies = []
-
-        # Define locks
+        # my locks for handling duplication and crawling
         self.not_crawled_lock = Lock()
         self.crawled_lock = Lock()
         self.added_ids_lock = Lock()
@@ -113,7 +112,7 @@ class IMDbCrawler:
             already_crawled = 0
             for crawled_movie in IMDB_crawled:
                 movie_id = crawled_movie.get('id', None)
-                if movie_id is None:
+                if movie_id is None:    # ignore null movies
                     continue
                 elif movie_id not in self.added_ids:
                     self.added_ids.add(movie_id)
@@ -215,11 +214,6 @@ class IMDbCrawler:
     def start_crawling(self):
         """
         Start crawling the movies until the crawling threshold is reached.
-        TODO: 
-            replace WHILE_LOOP_CONSTRAINTS with the proper constraints for the while loop.
-            replace NEW_URL with the new URL to crawl.
-            replace THERE_IS_NOTHING_TO_CRAWL with the condition to check if there is nothing to crawl.
-            delete help variables.
 
         ThreadPoolExecutor is used to make the crawler faster by using multiple threads to crawl the pages.
         You are free to use it or not. If used, not to forget safe access to the shared resources.
@@ -239,10 +233,9 @@ class IMDbCrawler:
                     crawled_counter += 1
                 if len(self.not_crawled) == 0:
                     if len(self.crawled) > 0:
-                        print("here")
                         with self.not_crawled_lock:
                             self.not_crawled += self.retrieve_related_links()
-                    wait(futures)
+                    wait(futures)   # wait to get new links to crawl
                     futures = []
             wait(futures)
 
@@ -262,8 +255,6 @@ class IMDbCrawler:
         bool
             True if the URL or movie ID has already been crawled, False otherwise.
         """
-        # with self.not_crawled_lock:
-        #     with self.crawled_lock:
         return url in self.crawled or movie_id in self.added_ids
 
     def crawl_page_info(self, URL):
@@ -310,10 +301,13 @@ class IMDbCrawler:
         """
         try:
             soup = BeautifulSoup(res.text, 'html.parser')
+
             summary_link = IMDbCrawler.get_summary_link(URL)
             reviews_link = IMDbCrawler.get_review_link(URL)
-            summary_synopsis_response = requests.get(summary_link, headers=IMDbCrawler.headers)
-            reviews_response = requests.get(reviews_link, headers=IMDbCrawler.headers)
+
+            summary_synopsis_response = self.crawl(summary_link)
+            reviews_response = self.crawl(reviews_link)
+
             summary_synopsis_soup = BeautifulSoup(summary_synopsis_response.content, 'html.parser')
             reviews_soup = BeautifulSoup(reviews_response.content, 'html.parser')
 
@@ -857,9 +851,7 @@ class IMDbCrawler:
 
 # testing soup extractions
 def soup_extractions():
-    # url = "https://www.imdb.com/title/tt1160419/"  # dune
-    url = "https://www.imdb.com/title/tt1832382/"  # a separation
-    url = "https://www.imdb.com/title/tt0095765/"
+    url = "https://www.imdb.com/title/tt1160419/"  # dune
     summary_link = IMDbCrawler.get_summary_link(url)
     reviews_link = IMDbCrawler.get_review_link(url)
     try:
@@ -919,7 +911,7 @@ def has_duplication(filepath):
         for movie in data:
             movie_id = movie.get('id', None)
             if movie_id in seen_ids:
-                print(f"{movie_id} already seen")
+                print(f"{movie_id} is duplicated")
             seen_ids.add(movie_id)
     except Exception as e:
         print(f"Failed to convert fields to string and write to JSON file. Exception: {e}")
@@ -933,23 +925,25 @@ def convert_fields_to_string(filepath):
     ----------
     filepath:
         address of json file
-
-    Returns
-    -------
-
     """
     try:
         with open(filepath, 'r', encoding="utf8") as file:
             data = json.load(file)
         for movie in data:
-            movie['first_page_summary'] = str(movie.get('first_page_summary', ''))
-            movie['mpaa'] = str(movie.get('mpaa', ''))
-            movie['budget'] = str(movie.get('budget', ''))
-            movie['gross_worldwide'] = str(movie.get('gross_worldwide', ''))
-            movie['summaries'] = list(movie.get('summaries', '').split())
-            movie['synopsis'] = list(movie.get('synopsis', '').split())
-            movie['release_year'] = str(movie.get('release_year', ''))
-            movie['rating'] = str(movie.get('rating', ''))
+            movie['first_page_summary'] = str(movie.get('first_page_summary', '')) if movie.get('first_page_summary', '') else "N/A"
+            movie['mpaa'] = str(movie.get('mpaa', '')) if movie.get('mpaa', '') else "N/A"
+            movie['budget'] = str(movie.get('budget', '')) if movie.get('budget', '') else "N/A"
+            movie['gross_worldwide'] = str(movie.get('gross_worldwide', '')) if movie.get('gross_worldwide', '') else "N/A"
+            movie['summaries'] = movie.get('summaries') if movie.get('summaries', '') else []
+            movie['synopsis'] = movie.get('summaries') if movie.get('synopsis', '') else []
+            movie['directors'] = movie.get('directors') if movie.get('directors', '') else []
+            movie['stars'] = movie.get('stars') if movie.get('stars', '') else []
+            movie['writers'] = movie.get('writers') if movie.get('writers', '') else []
+            movie['languages'] = movie.get('languages') if movie.get('languages', '') else []
+            movie['genres'] = movie.get('genres') if movie.get('genres', '') else []
+            movie['countries_of_origin'] = movie.get('countries_of_origin') if movie.get('countries_of_origin', '') else []
+            movie['release_year'] = str(movie.get('release_year', '')) if movie.get('release_year', '') else "N/A"
+            movie['rating'] = str(movie.get('rating', '')) if movie.get('rating', '') else "N/A"
         with open(filepath, 'w') as file:
             json.dump(data, file, indent=4)
         print(f"Successfully converted fields to string and wrote to {filepath}")
@@ -958,11 +952,12 @@ def convert_fields_to_string(filepath):
 
 
 def main():
-    has_duplication("../IMDB_crawled.json")
-    imdb_crawler = IMDbCrawler(crawling_threshold=4)
+    # has_duplication("../IMDB_crawled.json")
+    imdb_crawler = IMDbCrawler(crawling_threshold=50)
     imdb_crawler.read_from_file_as_json()
-    # imdb_crawler.start_crawling()
+    imdb_crawler.start_crawling()
     imdb_crawler.write_to_file_as_json()
+    # convert_fields_to_string("../IMDB_crawled.json")
     print("crawling done")
 
 
