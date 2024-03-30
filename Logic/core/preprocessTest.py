@@ -7,10 +7,13 @@ documents = [
             "In 14th Century Scotland, William Wallace leads his people in a rebellion against the tyranny of the English King, who has given English nobility the &#39;Prima Nocta&#39; - a right to take all new brides for the first night. The Scots are none too pleased with the brutal English invaders, but they lack leadership to fight back. Wallace creates a legend of himself, with his courageous defense of his people and attacks on the English.<span style=\"display:block\" data-reactroot=\"\">\u2014<a class=\"ipc-link ipc-link--base\" role=\"button\" tabindex=\"0\" aria-disabled=\"false\" href=\"/search/title/?plot_author=Rob%20Hartill&amp;view=simple&amp;sort=alpha&amp;ref_=ttpl_pl_5\">Rob Hartill</a></span>"
 ]
 
-preprocessor = preprocess.Preprocessor([])
+preprocessor = preprocess.Preprocessor(documents)
+print(preprocessor.preprocess())
+
+doc3_preprocessed = preprocessor.preprocess_one_text(documents[3])
+print(doc3_preprocessed)
+
 doc3 = preprocessor.remove_links(documents[3])
 doc3_puncless = preprocessor.remove_punctuations(doc3)
 doc3_stopless = preprocessor.remove_stopwords(doc3_puncless)
 doc3_normalized = preprocessor.normalize(doc3_stopless)
-doc3_tokenized = preprocessor.tokenize(doc3_normalized)
-print(doc3_tokenized)

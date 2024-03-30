@@ -1,8 +1,8 @@
+import json
 import re
-import nltk
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.tokenize import word_tokenize
 
 
 def load_stopwords(filepath):
@@ -28,8 +28,9 @@ class Preprocessor:
         self.documents = documents
         self.stopwords = load_stopwords("./stopwords.txt")
         # download nltk modules
-        nltk.download('omw-1.4')
-        nltk.download('wordnet')
+        # nltk.download('omw-1.4')
+        # nltk.download('wordnet')
+        # nltk.download('punkt')
 
     def preprocess(self):
         """
@@ -40,8 +41,39 @@ class Preprocessor:
         List[str]
             The preprocessed documents.
         """
-        # TODO
-        return
+        preprocessed_documents = []
+        for document in self.documents:
+            fields_to_preprocess = [("summaries", True), ("synopsis", True), ("first_page_summary", False)]
+            preprocessed_document = self.preprocess_one_document(document, fields_to_preprocess=fields_to_preprocess)
+            preprocessed_documents.append(preprocessed_document)
+        return preprocessed_documents
+
+    def preprocess_one_text(self, text):
+        text = self.remove_links(text)
+        text = self.remove_punctuations(text)
+        text = self.remove_stopwords(text)
+        text = self.normalize(text)
+        # the way I implemented the class, tokenization is really not needed !
+        # text = self.tokenize(text)
+        return text
+
+    def preprocess_one_document(self, document, fields_to_preprocess=None):
+        if fields_to_preprocess is None:  # document is a text
+            return self.preprocess_one_text(text=document)
+        else:  # document is dict
+            for field, is_list in fields_to_preprocess:
+                try:
+                    if is_list:
+                        items = document[field]
+                        new_items = []
+                        for item in items:
+                            new_items.append(self.preprocess_one_text(item))
+                        document[field] = new_items
+                    else:
+                        document[field] = self.preprocess_one_text(document[field])
+                except Exception as e:
+                    print(e)
+            return document
 
     def normalize(self, text: str):
         """
@@ -117,7 +149,7 @@ class Preprocessor:
         list
             The list of words.
         """
-        return
+        return word_tokenize(text)
 
     def remove_stopwords(self, text: str):
         """
@@ -136,3 +168,23 @@ class Preprocessor:
         words = text.split()
         cleaned_words = [word for word in words if word.lower() not in self.stopwords]
         return ' '.join(cleaned_words)
+
+
+def preprocess_dataset(filepath):
+    # preprocess crawled data
+    with open(filepath, 'r') as file:
+        data = json.load(file)
+    all_movies = [movie for movie in data]
+    preprocessor = Preprocessor(all_movies)
+    preprocessed_movies = preprocessor.preprocess()
+    with open(filepath, 'w') as file:
+        json.dump(preprocessed_movies, file, indent=4)
+
+
+def main():
+    preprocess_dataset("../IMDB_crawled.json")
+    preprocess_dataset("./LSHFakeData.json")
+
+
+if __name__ == "__main__":
+    main()
