@@ -19,12 +19,12 @@ def import_all_summaries(filepath, restrict=False, restrict_num=200):
     return summaries
 
 
-all_summaries = import_all_summaries("../IMDB_crawled.json", restrict=True, restrict_num=200)
-all_summaries += import_all_summaries("./LSHFakeData.json")
+all_summaries = import_all_summaries("./LSHFakeData.json")
+all_summaries += import_all_summaries("../IMDB_crawled.json", restrict=True, restrict_num=100)
 
-minhash_lsh = LSH.MinHashLSH(all_summaries, num_hashes=100)
+minhash_lsh = LSH.MinHashLSH(all_summaries, num_hashes=300)
 t = time.time()
-buckets = minhash_lsh.perform_lsh()
+buckets = minhash_lsh.perform_lsh(num_bands=100)
 t = time.time() - t
 minhash_lsh.jaccard_similarity_test(buckets, all_summaries)
 print(f"elapsed time: {t} seconds")

@@ -1,3 +1,6 @@
+import hashlib
+import math
+
 import numpy as np
 import itertools
 import random
@@ -52,15 +55,16 @@ class MinHashLSH:
         """
         # TODO
         all_shingles = [self.shingle_document(doc) for doc in self.documents]
-        # unique_shingles = sorted(list(set().union(*all_shingles)))
         unique_shingles = set()
         for shingle in all_shingles:
             for item in shingle:
                 unique_shingles.add(item)
 
         characteristic_matrix = np.zeros((len(self.documents), len(unique_shingles)), dtype=bool)
-        for i, doc in enumerate(self.documents):
+        for i, doc in enumerate(all_shingles):
             for j, shingle in enumerate(unique_shingles):
+                # if we search in doc, "is a" can be matched to "is another" so search in set of shingles
+                # in other words, see doc as set of it's shingles
                 characteristic_matrix[i, j] = shingle in doc
         return characteristic_matrix
 
@@ -78,7 +82,7 @@ class MinHashLSH:
         _, num_shingles = characteristic_matrix.shape
         # random permutations
         hash_permutations = np.array([np.random.permutation(num_shingles) for _ in range(self.num_hashes)])
-        signatures_matrix = np.full((self.num_hashes, len(self.documents)), np.inf)
+        signatures_matrix = np.full((self.num_hashes, len(self.documents)), np.inf)  # TODO: decide inf or 0 ???
         for i in range(len(self.documents)):
             for j in range(num_shingles):
                 if characteristic_matrix[i, j]:
@@ -86,7 +90,7 @@ class MinHashLSH:
                     signatures_matrix[:, i] = np.minimum(signatures_matrix[:, i], hash_values)
         return signatures_matrix
 
-    def lsh_buckets(self, signature, bands=10, rows_per_band=10):
+    def lsh_buckets(self, signature, bands=50, rows_per_band=10):
         """
         Group documents into Locality-Sensitive Hashing (LSH) buckets based on Min-Hash signatures.
 
@@ -106,6 +110,8 @@ class MinHashLSH:
         """
         # TODO
         num_hashes, num_docs = signature.shape
+        rows_per_band = int(num_hashes / bands)
+
         bucket_dict = {}
         for b in range(bands):
             starting_row = b * rows_per_band
@@ -113,6 +119,11 @@ class MinHashLSH:
             band_hash = {}
             for doc_index in range(num_docs):
                 band_signature = tuple(signature[starting_row:ending_row, doc_index])
+                # print(f"band signature is {band_signature}")
+                # TODO: use a hash function for band_signature
+                # band_signature = self.hash_band_signature(band_signature)
+                # print(f"band signature is {band_signature}")
+
                 if band_signature in band_hash:
                     bucket_id = band_hash[band_signature]
                     bucket_dict[bucket_id].append(doc_index)
@@ -122,7 +133,24 @@ class MinHashLSH:
                     bucket_dict[bucket_id] = [doc_index]
         return bucket_dict
 
-    def perform_lsh(self):
+    def hash_band_signature(self, band_signature, num_buckets=200):
+        bucket_id = 1
+        band_signature = sorted(list(band_signature))
+        for item in band_signature:
+            if math.isinf(item):
+                print(item)
+            if not math.isinf(item):
+                bucket_id *= (int(item)+1)
+                if bucket_id % 1000000009 == 0:
+                    print("bad 1001!")
+                bucket_id %= 1000009
+            else:
+                print(f"item is {item}")
+        if bucket_id == 0:
+            print("bucket id is zero!")
+        return bucket_id % num_buckets
+
+    def perform_lsh(self, num_bands=50):
         """
         Perform the entire Locality-Sensitive Hashing (LSH) process.
 
@@ -133,7 +161,7 @@ class MinHashLSH:
         """
         # TODO: change values of r and b to reach a valid score
         signature_matrix = self.min_hash_signature()
-        buckets_dict = self.lsh_buckets(signature_matrix, 5, 5)
+        buckets_dict = self.lsh_buckets(signature_matrix, bands=num_bands)
         return buckets_dict
 
     def jaccard_score(self, first_set: set, second_set: set):
