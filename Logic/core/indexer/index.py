@@ -33,7 +33,8 @@ class Index:
 
         current_index = {}
         #         TODO
-
+        for document in self.preprocessed_documents:
+            current_index[document['id']] = document
         return current_index
 
     def index_stars(self):
@@ -48,7 +49,21 @@ class Index:
         """
 
         #         TODO
-        pass
+        current_index = {}
+        for document in self.preprocessed_documents:
+            try:
+                # according to quera, first name and last name should be separated
+                stars = []
+                for full_name in document['stars']:
+                    stars += full_name.split()
+                for star in stars:
+                    if star in current_index:  # update tf
+                        current_index[star][document['id']] = current_index[star].get(document['id'], 0) + 1
+                    else:  # create with tf = 1
+                        current_index[star] = {document['id']: 1}
+            except Exception as e:
+                print(e)
+        return current_index
 
     def index_genres(self):
         """
@@ -62,7 +77,18 @@ class Index:
         """
 
         #         TODO
-        pass
+        current_index = {}
+        for document in self.preprocessed_documents:
+            try:
+                genres = document['genres']
+                for genre in genres:
+                    if genre in current_index:  # update tf
+                        current_index[genre][document['id']] = current_index[genre].get(document['id'], 0) + 1
+                    else:  # create with tf = 1
+                        current_index[genre] = {document['id']: 1}
+            except Exception as e:
+                print(e)
+        return current_index
 
     def index_summaries(self):
         """
@@ -77,7 +103,19 @@ class Index:
 
         current_index = {}
         #         TODO
-
+        current_index = {}
+        for document in self.preprocessed_documents:
+            try:
+                for summary in document['summaries']:
+                    # split into tokens
+                    tokens = summary.split()
+                    for token in tokens:
+                        if token in current_index:  # update tf
+                            current_index[token][document['id']] = current_index[token].get(document['id'], 0) + 1
+                        else:  # create with tf = 1
+                            current_index[token] = {document['id']: 1}
+            except Exception as e:
+                print(e)
         return current_index
 
     def get_posting_list(self, word: str, index_type: str):
@@ -99,8 +137,14 @@ class Index:
 
         try:
             #         TODO
-            pass
-        except:
+            posting_list = []
+            if index_type in self.index:
+                for term, posting in self.index[index_type].items():
+                    if word == term:
+                        posting_list.extend(posting.keys())
+            return posting_list
+        except Exception as e:
+            print(e)
             return []
 
     def add_document_to_index(self, document: dict):
@@ -149,26 +193,31 @@ class Index:
             print('Add is incorrect, document')
             return
 
-        if (set(index_after_add[Indexes.STARS.value]['tim']).difference(set(index_before_add[Indexes.STARS.value]['tim']))
+        if (set(index_after_add[Indexes.STARS.value]['tim']).difference(
+                set(index_before_add[Indexes.STARS.value]['tim']))
                 != {dummy_document['id']}):
             print('Add is incorrect, tim')
             return
 
-        if (set(index_after_add[Indexes.STARS.value]['henry']).difference(set(index_before_add[Indexes.STARS.value]['henry']))
+        if (set(index_after_add[Indexes.STARS.value]['henry']).difference(
+                set(index_before_add[Indexes.STARS.value]['henry']))
                 != {dummy_document['id']}):
             print('Add is incorrect, henry')
             return
-        if (set(index_after_add[Indexes.GENRES.value]['drama']).difference(set(index_before_add[Indexes.GENRES.value]['drama']))
+        if (set(index_after_add[Indexes.GENRES.value]['drama']).difference(
+                set(index_before_add[Indexes.GENRES.value]['drama']))
                 != {dummy_document['id']}):
             print('Add is incorrect, drama')
             return
 
-        if (set(index_after_add[Indexes.GENRES.value]['crime']).difference(set(index_before_add[Indexes.GENRES.value]['crime']))
+        if (set(index_after_add[Indexes.GENRES.value]['crime']).difference(
+                set(index_before_add[Indexes.GENRES.value]['crime']))
                 != {dummy_document['id']}):
             print('Add is incorrect, crime')
             return
 
-        if (set(index_after_add[Indexes.SUMMARIES.value]['good']).difference(set(index_before_add[Indexes.SUMMARIES.value]['good']))
+        if (set(index_after_add[Indexes.SUMMARIES.value]['good']).difference(
+                set(index_before_add[Indexes.SUMMARIES.value]['good']))
                 != {dummy_document['id']}):
             print('Add is incorrect, good')
             return
