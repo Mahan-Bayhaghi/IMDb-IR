@@ -8,12 +8,6 @@ documents = [
 ]
 
 preprocessor = preprocess.Preprocessor(documents)
+doc3_preprocessed = preprocessor.preprocess_one_text(documents[3])
 print(preprocessor.preprocess())
 
-doc3_preprocessed = preprocessor.preprocess_one_text(documents[3])
-print(doc3_preprocessed)
-
-doc3 = preprocessor.remove_links(documents[3])
-doc3_puncless = preprocessor.remove_punctuations(doc3)
-doc3_stopless = preprocessor.remove_stopwords(doc3_puncless)
-doc3_normalized = preprocessor.normalize(doc3_stopless)

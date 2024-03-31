@@ -171,13 +171,12 @@ class Preprocessor:
 
 
 def preprocess_dataset(filepath):
-    # preprocess crawled data
     with open(filepath, 'r') as file:
         data = json.load(file)
     all_movies = [movie for movie in data]
     preprocessor = Preprocessor(all_movies)
     preprocessed_movies = preprocessor.preprocess()
-    with open(filepath, 'w') as file:
+    with open(filepath.replace(".json", "_preprocessed.json"), 'w') as file:
         json.dump(preprocessed_movies, file, indent=4)
 
 

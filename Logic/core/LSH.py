@@ -1,6 +1,5 @@
 import hashlib
-import math
-
+import mmh3
 import numpy as np
 import itertools
 import random
@@ -59,6 +58,7 @@ class MinHashLSH:
         for shingle in all_shingles:
             for item in shingle:
                 unique_shingles.add(item)
+        print(f"number of unique shingles : {len(unique_shingles)}")
 
         characteristic_matrix = np.zeros((len(self.documents), len(unique_shingles)), dtype=bool)
         for i, doc in enumerate(all_shingles):
@@ -79,18 +79,19 @@ class MinHashLSH:
         """
         # TODO
         characteristic_matrix = self.build_characteristic_matrix()
-        _, num_shingles = characteristic_matrix.shape
+        num_docs, num_shingles = characteristic_matrix.shape
         # random permutations
+        # using method of chapter 3.3.5 (Mining of Massive Datasets- Leskovec,Rajaraman,Ullman)
         hash_permutations = np.array([np.random.permutation(num_shingles) for _ in range(self.num_hashes)])
-        signatures_matrix = np.full((self.num_hashes, len(self.documents)), np.inf)  # TODO: decide inf or 0 ???
-        for i in range(len(self.documents)):
+        signatures_matrix = np.full((self.num_hashes, len(self.documents)), np.inf)
+        for i in range(num_docs):
             for j in range(num_shingles):
                 if characteristic_matrix[i, j]:
                     hash_values = hash_permutations[:, j]
                     signatures_matrix[:, i] = np.minimum(signatures_matrix[:, i], hash_values)
         return signatures_matrix
 
-    def lsh_buckets(self, signature, bands=50, rows_per_band=10):
+    def lsh_buckets(self, signature, bands=50, rows_per_band=None):
         """
         Group documents into Locality-Sensitive Hashing (LSH) buckets based on Min-Hash signatures.
 
@@ -110,19 +111,19 @@ class MinHashLSH:
         """
         # TODO
         num_hashes, num_docs = signature.shape
-        rows_per_band = int(num_hashes / bands)
-
+        if rows_per_band is None:
+            rows_per_band = int(num_hashes / bands)
+        print(f"threshold : {(1/bands)**(1/rows_per_band)}")
         bucket_dict = {}
         for b in range(bands):
             starting_row = b * rows_per_band
             ending_row = starting_row + rows_per_band
             band_hash = {}
             for doc_index in range(num_docs):
-                band_signature = tuple(signature[starting_row:ending_row, doc_index])
-                # print(f"band signature is {band_signature}")
+                # band_signature = tuple(signature[starting_row:ending_row, doc_index])
+                band_signature = tuple(sorted(signature[starting_row:ending_row, doc_index]))
                 # TODO: use a hash function for band_signature
-                # band_signature = self.hash_band_signature(band_signature)
-                # print(f"band signature is {band_signature}")
+                # band_signature = self.hash_band_signature(band_signature, hash_function='sha1')
 
                 if band_signature in band_hash:
                     bucket_id = band_hash[band_signature]
@@ -133,24 +134,17 @@ class MinHashLSH:
                     bucket_dict[bucket_id] = [doc_index]
         return bucket_dict
 
-    def hash_band_signature(self, band_signature, num_buckets=200):
-        bucket_id = 1
-        band_signature = sorted(list(band_signature))
-        for item in band_signature:
-            if math.isinf(item):
-                print(item)
-            if not math.isinf(item):
-                bucket_id *= (int(item)+1)
-                if bucket_id % 1000000009 == 0:
-                    print("bad 1001!")
-                bucket_id %= 1000009
-            else:
-                print(f"item is {item}")
-        if bucket_id == 0:
-            print("bucket id is zero!")
-        return bucket_id % num_buckets
+    def hash_band_signature(self, band_signature, num_buckets=200, hash_function='md5'):
+        hash_value = 0
+        if hash_function == 'md5':
+            hash_value = hashlib.md5(str(band_signature).encode()).hexdigest()
+        elif hash_function == 'sha1':
+            hash_value = hashlib.sha1(str(band_signature).encode()).hexdigest()
+        elif hash_function == 'murmur':
+            hash_value = mmh3.hash(str(band_signature))
+        return int(hash_value, 16) % num_buckets
 
-    def perform_lsh(self, num_bands=50):
+    def perform_lsh(self, num_bands=50, num_rows_per_band=None):
         """
         Perform the entire Locality-Sensitive Hashing (LSH) process.
 
@@ -161,7 +155,7 @@ class MinHashLSH:
         """
         # TODO: change values of r and b to reach a valid score
         signature_matrix = self.min_hash_signature()
-        buckets_dict = self.lsh_buckets(signature_matrix, bands=num_bands)
+        buckets_dict = self.lsh_buckets(signature_matrix, bands=num_bands, rows_per_band=num_rows_per_band)
         return buckets_dict
 
     def jaccard_score(self, first_set: set, second_set: set):
@@ -229,7 +223,7 @@ class MinHashLSH:
                         if near_duplicated_jaccard_score > random_jaccard_score:
                             current_score += 1
 
-                    if current_score == 5:
+                    if current_score >= 5:
                         correct_near_duplicates += 1
 
         # a good score is around 0.8
