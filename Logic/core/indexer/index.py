@@ -3,7 +3,7 @@ import os
 import json
 import copy
 from indexes_enum import Indexes
-
+import Logic.core.preprocess as preprocess
 
 class Index:
     def __init__(self, preprocessed_documents: list):
@@ -158,7 +158,18 @@ class Index:
         """
 
         #         TODO
-        pass
+        try:
+            self.index[Indexes.DOCUMENTS.value][document['id']] = document
+
+            for index_type in [Indexes.STARS.value, Indexes.GENRES.value, Indexes.SUMMARIES.value]:
+                if index_type in document:
+                    for term in document[index_type]:
+                        if term not in self.index[index_type]:
+                            self.index[index_type][term] = {}
+                        self.index[index_type][term][document['id']] = 1  # Assuming tf is always 1 for now
+        except Exception as e:
+            print(e)
+
 
     def remove_document_from_index(self, document_id: str):
         """
@@ -171,7 +182,16 @@ class Index:
         """
 
         #         TODO
-        pass
+        try:
+            if document_id in self.index[Indexes.DOCUMENTS.value]:
+                del self.index[Indexes.DOCUMENTS.value][document_id]
+
+            for index_type in [Indexes.STARS.value, Indexes.GENRES.value, Indexes.SUMMARIES.value]:
+                for term, posting_list in self.index[index_type].items():
+                    if document_id in posting_list:
+                        del posting_list[document_id]
+        except Exception as e:
+            print(e)
 
     def check_add_remove_is_correct(self):
         """
@@ -249,14 +269,15 @@ class Index:
             os.makedirs(path)
 
         if index_type is None:
-            # TODO
-            pass
+            #         TODO
+            index_type = Indexes.DOCUMENTS.value  # storing the DOCUMENTS index if index_type is None
 
         if index_type not in self.index:
             raise ValueError('Invalid index type')
 
-        #         TODO
-        pass
+        filepath = os.path.join(path, f"{index_type}_index.json")
+        with open(filepath, 'w') as file:
+            json.dump(self.index[index_type], file, indent=4)
 
     def load_index(self, path: str):
         """
@@ -269,7 +290,21 @@ class Index:
         """
 
         #         TODO
-        pass
+        # if not os.path.exists(path):
+        #     raise FileNotFoundError(f"The specified path '{path}' does not exist.")
+        try:
+            loaded_index = {}
+            for index_type in Indexes:
+                filepath = os.path.join(path, f"{index_type.value}_index.json")
+                with open(filepath, 'r') as file:
+                    loaded_index[index_type.value] = json.load(file)
+
+            if not loaded_index:
+                raise FileNotFoundError("No index files found in the specified directory.")
+
+            self.index = loaded_index
+        except Exception as e:
+            print(e)
 
     def check_if_index_loaded_correctly(self, index_type: str, loaded_index: dict):
         """
@@ -352,3 +387,16 @@ class Index:
             return False
 
 # TODO: Run the class with needed parameters, then run check methods and finally report the results of check methods
+
+def main():
+    # preprocessor = preprocess.Preprocessor()
+    index = Index(preprocessed_documents)
+
+    # Run check methods
+    index.check_add_remove_is_correct()
+    index.check_if_index_loaded_correctly()
+    index.check_if_indexing_is_good(index_type='summaries', check_word='good')
+
+
+if __name__ == "__main__":
+   main()
