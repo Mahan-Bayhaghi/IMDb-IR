@@ -2,6 +2,9 @@ import time
 import os
 import json
 import copy
+
+from nltk import word_tokenize
+
 from indexes_enum import Indexes
 import Logic.core.preprocess as preprocess
 
@@ -55,7 +58,12 @@ class Index:
 
         self.preprocessed_documents = preprocessed_documents
 
-        self.stars_trie_root = Trie()
+        self.index_trie_root = {
+            Indexes.DOCUMENTS.value: Trie(),
+            Indexes.STARS.value: Trie(),
+            Indexes.GENRES.value: Trie(),
+            Indexes.SUMMARIES.value: Trie()
+        }
 
         self.index = {
             Indexes.DOCUMENTS.value: self.index_documents(),
@@ -79,6 +87,10 @@ class Index:
         #         TODO
         for document in self.preprocessed_documents:
             current_index[document['id']] = document
+
+        self.index_trie_root[Indexes.DOCUMENTS.value] = Trie()
+        self.index_trie_root[Indexes.DOCUMENTS.value].create_trie(current_index)
+
         return current_index
 
     def index_stars(self):
@@ -108,8 +120,8 @@ class Index:
             except Exception as e:
                 print(e)
 
-        self.stars_trie_root = Trie()
-        self.stars_trie_root.create_trie(current_index)
+        self.index_trie_root[Indexes.STARS.value] = Trie()
+        self.index_trie_root[Indexes.STARS.value].create_trie(current_index)
 
         return current_index
 
@@ -136,6 +148,10 @@ class Index:
                         current_index[genre] = {document['id']: 1}
             except Exception as e:
                 print(e)
+
+        self.index_trie_root[Indexes.GENRES.value] = Trie()
+        self.index_trie_root[Indexes.GENRES.value].create_trie(current_index)
+
         return current_index
 
     def index_summaries(self):
@@ -164,6 +180,10 @@ class Index:
                             current_index[token] = {document['id']: 1}
             except Exception as e:
                 print(e)
+
+        self.index_trie_root[Indexes.SUMMARIES.value] = Trie()
+        self.index_trie_root[Indexes.SUMMARIES.value].create_trie(current_index)
+
         return current_index
 
     def get_posting_list(self, word: str, index_type: str):
@@ -182,27 +202,16 @@ class Index:
         list
             posting list of the word (you should return the list of document IDs that contain the word and ignore the tf)
         """
-        if index_type == Indexes.STARS.value:
-            dic = self.stars_trie_root.search_trie(word)
-            if dic is not None:
-                dic = dic[0]
-                # print(f"dic.keys() is {sorted(dic.keys())}")
-                return sorted(dic.keys())
+        if index_type not in self.index:
+            raise ValueError('Invalid index type')
+
+        else:
+            posting_list = self.index_trie_root[index_type].search_trie(word)
+            if posting_list is not None:
+                posting_list = posting_list[0]
+                return sorted(posting_list.keys())
             else:
                 return []
-        try:
-            #         TODO
-            posting_list = []
-            if index_type in self.index:
-                # for term, posting in self.index[index_type].items():
-                #     if word == term:
-                #         posting_list.extend(posting.keys())
-                posting_list = list(self.index[index_type][word].keys())
-                print(f"Posting list is : {posting_list}")
-            return posting_list
-        except Exception as e:
-            print(e)
-            return []
 
     def add_document_to_index(self, document: dict):
         """
@@ -423,11 +432,15 @@ class Index:
         brute_force_time = end - start
 
         # check by getting the posting list of the word
-        start = time.time()
         # TODO: based on your implementation, you may need to change the following line
-        # all_posting_lists = [self.get_posting_list(check_word_, index_type) for check_word_ in check_word.split()]
-        posting_list = self.get_posting_list(check_word, index_type)
-        # posting_list = all_posting_lists
+        # tokenize for multiple word queries
+        word_tokens = word_tokenize(check_word)
+        posting_lists = []
+
+        start = time.time()
+        for word in word_tokens:
+            posting_lists += self.get_posting_list(word, index_type)
+        posting_list = list(set(posting_lists))
 
         end = time.time()
         implemented_time = end - start
@@ -466,8 +479,10 @@ def main():
     # # check methods
     index.check_add_remove_is_correct()
     index.load_index("./")
-    print(f"index loaded correctly : {index.check_if_index_loaded_correctly(Indexes.GENRES.value, index.index[Indexes.GENRES.value])}")
-    index.check_if_indexing_is_good(index_type='stars', check_word='drew')
+    print(
+        f"index loaded correctly : "
+        f"{index.check_if_index_loaded_correctly(Indexes.GENRES.value, index.index[Indexes.GENRES.value])}")
+    index.check_if_indexing_is_good(index_type=Indexes.STARS.value, check_word='al pacino')
 
 
 if __name__ == "__main__":
