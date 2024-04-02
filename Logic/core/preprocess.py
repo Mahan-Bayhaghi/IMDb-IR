@@ -43,7 +43,7 @@ class Preprocessor:
         """
         preprocessed_documents = []
         for document in self.documents:
-            fields_to_preprocess = [("summaries", True), ("synopsis", True), ("first_page_summary", False)]
+            fields_to_preprocess = [("summaries", True), ("synopsis", True), ("first_page_summary", False), ("genres", True), ("stars", True)]
             preprocessed_document = self.preprocess_one_document(document, fields_to_preprocess=fields_to_preprocess)
             preprocessed_documents.append(preprocessed_document)
         return preprocessed_documents

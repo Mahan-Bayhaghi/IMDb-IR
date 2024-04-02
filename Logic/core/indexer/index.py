@@ -5,6 +5,7 @@ import copy
 from indexes_enum import Indexes
 import Logic.core.preprocess as preprocess
 
+
 class Index:
     def __init__(self, preprocessed_documents: list):
         """
@@ -139,9 +140,11 @@ class Index:
             #         TODO
             posting_list = []
             if index_type in self.index:
-                for term, posting in self.index[index_type].items():
-                    if word == term:
-                        posting_list.extend(posting.keys())
+                # for term, posting in self.index[index_type].items():
+                #     if word == term:
+                #         posting_list.extend(posting.keys())
+                posting_list = list(self.index[index_type][word].keys())
+                print(f"Posting list is : {posting_list}")
             return posting_list
         except Exception as e:
             print(e)
@@ -169,7 +172,6 @@ class Index:
                         self.index[index_type][term][document['id']] = 1  # Assuming tf is always 1 for now
         except Exception as e:
             print(e)
-
 
     def remove_document_from_index(self, document_id: str):
         """
@@ -269,8 +271,8 @@ class Index:
             os.makedirs(path)
 
         if index_type is None:
-            #         TODO
-            index_type = Indexes.DOCUMENTS.value  # storing the DOCUMENTS index if index_type is None
+            #         TODO : store tiered index
+            index_type = Indexes.DOCUMENTS.value
 
         if index_type not in self.index:
             raise ValueError('Invalid index type')
@@ -290,8 +292,6 @@ class Index:
         """
 
         #         TODO
-        # if not os.path.exists(path):
-        #     raise FileNotFoundError(f"The specified path '{path}' does not exist.")
         try:
             loaded_index = {}
             for index_type in Indexes:
@@ -365,7 +365,9 @@ class Index:
         # check by getting the posting list of the word
         start = time.time()
         # TODO: based on your implementation, you may need to change the following line
+        # all_posting_lists = [self.get_posting_list(check_word_, index_type) for check_word_ in check_word.split()]
         posting_list = self.get_posting_list(check_word, index_type)
+        # posting_list = all_posting_lists
 
         end = time.time()
         implemented_time = end - start
@@ -386,17 +388,28 @@ class Index:
             print('Indexing is wrong')
             return False
 
+
 # TODO: Run the class with needed parameters, then run check methods and finally report the results of check methods
 
-def main():
-    # preprocessor = preprocess.Preprocessor()
-    index = Index(preprocessed_documents)
 
-    # Run check methods
-    index.check_add_remove_is_correct()
-    index.check_if_index_loaded_correctly()
-    index.check_if_indexing_is_good(index_type='summaries', check_word='good')
+def import_data(filepath):
+    with open(filepath, 'r') as file:
+        data = json.load(file)
+    return data
+
+
+def main():
+    preprocessed_documents = import_data("../../IMDB_crawled_preprocessed.json")[:]
+    index = Index(preprocessed_documents)
+    # # check methods
+    # index.check_add_remove_is_correct()
+    # index.store_index("./", Indexes.DOCUMENTS.value)
+    # index.store_index("./", Indexes.STARS.value)
+    # index.store_index("./", Indexes.GENRES.value)
+    # index.store_index("./", Indexes.SUMMARIES.value)
+    # print(f"index loaded correctly : {index.check_if_index_loaded_correctly()}")
+    index.check_if_indexing_is_good(index_type='stars', check_word='ford')
 
 
 if __name__ == "__main__":
-   main()
+    main()
