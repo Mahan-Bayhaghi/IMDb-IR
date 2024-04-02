@@ -6,6 +6,47 @@ from indexes_enum import Indexes
 import Logic.core.preprocess as preprocess
 
 
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.movie_ids = []
+        self.is_end_of_word = False
+
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def insert_term(self, term, movie_tf):
+        term = term.lower()
+        node = self.root
+        length = len(term)
+        for level in range(length):
+            index = term[level]
+            # if current character is not present
+            if index not in node.children.keys():
+                node.children[index] = TrieNode()
+            node = node.children[index]
+        node.movie_ids.append(movie_tf)
+        node.isEndOfWord = True
+
+    def create_trie(self, dictionary: dict):
+        for term in dictionary.keys():
+            # print(dictionary[term])
+            self.insert_term(term, dictionary[term])
+        return self.root
+
+    def search_trie(self, term):
+        node = self.root
+        length = len(term)
+        for level in range(length):
+            index = term[level]
+            if index not in node.children.keys():
+                return None
+            node = node.children[index]
+        return node.movie_ids
+
+
 class Index:
     def __init__(self, preprocessed_documents: list):
         """
@@ -13,6 +54,8 @@ class Index:
         """
 
         self.preprocessed_documents = preprocessed_documents
+
+        self.stars_trie_root = Trie()
 
         self.index = {
             Indexes.DOCUMENTS.value: self.index_documents(),
@@ -64,6 +107,10 @@ class Index:
                         current_index[star] = {document['id']: 1}
             except Exception as e:
                 print(e)
+
+        self.stars_trie_root = Trie()
+        self.stars_trie_root.create_trie(current_index)
+
         return current_index
 
     def index_genres(self):
@@ -135,7 +182,14 @@ class Index:
         list
             posting list of the word (you should return the list of document IDs that contain the word and ignore the tf)
         """
-
+        if index_type == Indexes.STARS.value:
+            dic = self.stars_trie_root.search_trie(word)
+            if dic is not None:
+                dic = dic[0]
+                # print(f"dic.keys() is {sorted(dic.keys())}")
+                return sorted(dic.keys())
+            else:
+                return []
         try:
             #         TODO
             posting_list = []
@@ -281,6 +335,12 @@ class Index:
         with open(filepath, 'w') as file:
             json.dump(self.index[index_type], file, indent=4)
 
+    def store_all_index(self, path: str):
+        self.store_index(path, Indexes.DOCUMENTS.value)
+        self.store_index(path, Indexes.STARS.value)
+        self.store_index(path, Indexes.GENRES.value)
+        self.store_index(path, Indexes.SUMMARIES.value)
+
     def load_index(self, path: str):
         """
         Loads the index from a file (such as a JSON file)
@@ -351,7 +411,7 @@ class Index:
                 continue
 
             for field in document[index_type]:
-                if check_word in field:
+                if check_word in field.split():
                     docs.append(document['id'])
                     break
 
@@ -401,14 +461,13 @@ def import_data(filepath):
 def main():
     preprocessed_documents = import_data("../../IMDB_crawled_preprocessed.json")[:]
     index = Index(preprocessed_documents)
+    index.store_all_index(path="./")
+
     # # check methods
-    # index.check_add_remove_is_correct()
-    # index.store_index("./", Indexes.DOCUMENTS.value)
-    # index.store_index("./", Indexes.STARS.value)
-    # index.store_index("./", Indexes.GENRES.value)
-    # index.store_index("./", Indexes.SUMMARIES.value)
-    # print(f"index loaded correctly : {index.check_if_index_loaded_correctly()}")
-    index.check_if_indexing_is_good(index_type='stars', check_word='ford')
+    index.check_add_remove_is_correct()
+    index.load_index("./")
+    print(f"index loaded correctly : {index.check_if_index_loaded_correctly(Indexes.GENRES.value, index.index[Indexes.GENRES.value])}")
+    index.check_if_indexing_is_good(index_type='stars', check_word='drew')
 
 
 if __name__ == "__main__":
