@@ -332,16 +332,12 @@ class Index:
         if not os.path.exists(path):
             os.makedirs(path)
 
-        if index_type is None:
-            #         TODO : store tiered index
-            index_type = Indexes.DOCUMENTS.value
+        if index_name not in self.index:
+            raise ValueError('Invalid index name')
 
-        if index_type not in self.index:
-            raise ValueError('Invalid index type')
-
-        filepath = os.path.join(path, f"{index_type}_index.json")
+        filepath = os.path.join(path, f"{index_name}_index.json")
         with open(filepath, 'w') as file:
-            json.dump(self.index[index_type], file, indent=4)
+            json.dump(self.index[index_name], file, indent=4)
 
     def store_all_index(self, path: str):
         self.store_index(path, Indexes.DOCUMENTS.value)
