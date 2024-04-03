@@ -44,7 +44,10 @@ class DocumentLengthsIndex:
         document_lengths = {}
         for document_id, document in self.documents_index.items():
             if where in document:
-                document_lengths[document_id] = len(document[where])
+                if where == "summaries":
+                    document_lengths[document_id] = sum(len(lst) for lst in document[where])
+                else:
+                    document_lengths[document_id] = len(document[where])
             else:
                 document_lengths[document_id] = 0
         return document_lengths

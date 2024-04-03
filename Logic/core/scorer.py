@@ -76,7 +76,6 @@ class Scorer:
             idf = np.log(self.N / df)
             self.idf[term] = idf
 
-        print(f"idf of term {term} is {idf}")
         return idf
 
     def get_query_tfs(self, query):
@@ -210,14 +209,14 @@ class Scorer:
 
         # TODO
         scores = {}
-        k = 1.5
-        b = 0.75
+        k1 = 1.5
+        b = 1
         for doc_id in self.get_list_of_documents(query):
             scores[doc_id] = self.get_okapi_bm25_score(query, doc_id, average_document_field_length, document_lengths,
-                                                       k, b)
+                                                       k1=k1, b=b)
         return scores
 
-    def get_okapi_bm25_score(self, query, document_id, average_document_field_length, document_lengths, k=1.5, b=0.75):
+    def get_okapi_bm25_score(self, query, document_id, average_document_field_length, document_lengths, k1=1.5, b=0.75):
         """
         Returns the Okapi BM25 score of a document for a query.
 
@@ -225,7 +224,7 @@ class Scorer:
         ----------
         b: float
             tuning parameter
-        k: float
+        k1: float
             tuning parameter
         query: List[str]
             The query to be scored
@@ -249,7 +248,7 @@ class Scorer:
             tf = self.index.get(term, {}).get(document_id, 0)
             idf = self.get_idf(term)
             doc_len = document_lengths.get(document_id, 0)
-            score += idf * (tf * (k + 1)) / (tf + k * (1 - b + (b * doc_len / average_document_field_length)))
+            score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + (b * doc_len / average_document_field_length)))
         return score
 
 
@@ -257,21 +256,24 @@ def main():
     query = "spider man in wonderland"
     method = "lnc.ltn"
     path = "D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/indexer/saved_indexes/"
-    reader = index_reader.Index_reader(path, indexes_enum.Indexes.STARS)
-    query = "andrew garfield"
+    reader = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES)
+    query = "meet success"
     query_as_list = query.split()
     scorer = Scorer(reader.index, 3253)
-    print(scorer.get_list_of_documents(query_as_list))
     vector_space_result = scorer.compute_scores_with_vector_space_model(query_as_list, method)
-    res_as_list = []
+    sorted_vector_space_result = []
     for k, v in vector_space_result.items():
-        res_as_list.append((k, v))
-    res_as_list.sort(key=lambda x: x[1], reverse=True)
-    print(res_as_list)
-
-    reader2 = index_reader.Index_reader(path, indexes_enum.Indexes.STARS, indexes_enum.Index_types.DOCUMENT_LENGTH)
-    okapi_bm25_result = scorer.compute_socres_with_okapi_bm25(query_as_list, 2.8788810328927146, reader2.index)
-    print(okapi_bm25_result)
+        sorted_vector_space_result.append((k, v))
+    sorted_vector_space_result.sort(key=lambda x: x[1], reverse=True)
+    print(sorted_vector_space_result)
+    print("----"*10)
+    reader2 = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES, indexes_enum.Index_types.DOCUMENT_LENGTH)
+    okapi_bm25_result = scorer.compute_socres_with_okapi_bm25(query_as_list, 1251.9806332616047, reader2.index)
+    sorted_okapi_bm25_result = []
+    for k, v in okapi_bm25_result.items():
+        sorted_okapi_bm25_result.append((k, v))
+    sorted_okapi_bm25_result.sort(key=lambda x: x[1], reverse=True)
+    print(sorted_okapi_bm25_result)
 
 
 if __name__ == "__main__":
