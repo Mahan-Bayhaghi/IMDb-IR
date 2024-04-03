@@ -52,7 +52,10 @@ class Metadata_index:
         total, counter = 0, 0
         for document_id, document in self.documents.items():
             if where in document:
-                total += len(document[where])
+                if where == "summaries":
+                    total += sum(len(lst) for lst in document[where])
+                else:
+                    total += len(document[where])
                 counter += 1
 
         return 0 if counter == 0 else (float(total)/float(counter))
