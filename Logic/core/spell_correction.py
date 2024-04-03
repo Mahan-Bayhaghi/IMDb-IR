@@ -1,3 +1,7 @@
+import collections
+import json
+
+
 class SpellCorrection:
     def __init__(self, all_documents):
         """
@@ -26,13 +30,15 @@ class SpellCorrection:
         set
             A set of shingles.
         """
-        shingles = set()
-        
-        # TODO: Create shingle here
 
+        # TODO: Create shingle here
+        shingles = set()
+        char_count = len(word)
+        for i in range(char_count - k + 1):
+            shingles.add(word[i:i + k])
         return shingles
-    
-    def jaccard_score(self, first_set, second_set):
+
+    def jaccard_score(self, first_set: set, second_set: set):
         """
         Calculate jaccard score.
 
@@ -50,8 +56,12 @@ class SpellCorrection:
         """
 
         # TODO: Calculate jaccard score here.
-
-        return
+        score = 0.00
+        intersection = first_set.intersection(second_set)
+        union = first_set.union(second_set)
+        if len(union) > 0:
+            score = len(intersection) / len(union)
+        return score
 
     def shingling_and_counting(self, all_documents):
         """
@@ -70,12 +80,16 @@ class SpellCorrection:
             A dictionary from words to their TFs.
         """
         all_shingled_words = dict()
-        word_counter = dict()
+        word_counter = collections.defaultdict(int)
 
         # TODO: Create shingled words dictionary and word counter dictionary here.
-                
+        for documents in all_documents:
+            for word in documents.split():
+                word_counter[word] += 1
+                word_shingles = self.shingle_word(word)
+                all_shingled_words[word] = word_shingles
         return all_shingled_words, word_counter
-    
+
     def find_nearest_words(self, word):
         """
         Find correct form of a misspelled word.
@@ -90,19 +104,27 @@ class SpellCorrection:
         list of str
             5 nearest words.
         """
-        top5_candidates = list()
 
         # TODO: Find 5 nearest candidates here.
+        all_candidates = []
+        word_shingles = self.shingle_word(word, k=2)
+        for candidate in self.all_shingled_words.keys():
+            candidate_shingles = self.all_shingled_words[candidate]
+            score = self.jaccard_score(candidate_shingles, word_shingles)
+            all_candidates.append((candidate, score))
+
+        all_candidates.sort(key=lambda x: x[1], reverse=True)
+        top5_candidates = [candidate for candidate in all_candidates[:5]]
 
         return top5_candidates
-    
-    def spell_check(self, query):
+
+    def spell_check(self, query: str):
         """
         Find correct form of a misspelled query.
 
         Parameters
         ----------
-        query : stf
+        query : str
             The misspelled query.
 
         Returns
@@ -110,8 +132,41 @@ class SpellCorrection:
         str
             Correct form of the query.
         """
-        final_result = ""
-        
-        # TODO: Do spell correction here.
+        final_result = []
 
-        return final_result
+        # TODO: Do spell correction here.
+        query_tokens = query.split()
+
+        for token in query_tokens:
+            top5_candidates = self.find_nearest_words(token)
+            top5_candidate_words = [candidate[0] for candidate in top5_candidates]
+            max_tf = max([self.word_counter[word] for word in top5_candidate_words])
+            normalized_tf_scores = {candidate: self.word_counter[candidate] / max_tf for candidate in top5_candidate_words}
+
+            # jaccard score * normalized-tf
+            candidates_with_scores =\
+                [(candidate[0], candidate[1]*normalized_tf_scores[candidate[0]]) for candidate in top5_candidates]
+            candidates_with_scores.sort(key=lambda x: x[1], reverse=True)
+
+            final_result.append(candidates_with_scores[0][0])
+
+        return ' '.join(final_result)
+
+
+def import_data(filepath):
+    with open(filepath, 'r') as file:
+        data = json.load(file)
+    return data
+
+
+def main():
+    crawled_data = import_data('../IMDB_crawled.json')[:400]
+    only_fps = [doc["first_page_summary"] for doc in crawled_data]
+    as_str = [str(doc).lower() for doc in crawled_data]
+    spell_checker = SpellCorrection(as_str)
+    print(spell_checker.find_nearest_words("separtion"))
+    print(spell_checker.spell_check("andre garfild"))
+
+
+if __name__ == "__main__":
+    main()
