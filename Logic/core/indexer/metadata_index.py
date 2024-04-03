@@ -17,8 +17,6 @@ class Metadata_index:
         self.path = path
         self.documents = self.read_documents()
         self.metadata_index = None
-        self.create_metadata_index()
-        self.store_metadata_index(path)
 
     def read_documents(self):
         """
@@ -75,3 +73,5 @@ class Metadata_index:
 
 if __name__ == "__main__":
     meta_index = Metadata_index()
+    meta_index.create_metadata_index()
+    meta_index.store_metadata_index('./saved_indexes/')

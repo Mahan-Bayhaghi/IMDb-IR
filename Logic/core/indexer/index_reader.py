@@ -1,7 +1,9 @@
-from indexes_enum import Indexes,Index_types
+from indexes_enum import Indexes, Index_types
 import json
+
+
 class Index_reader:
-    def __init__(self,path: str, index_name: Indexes, index_type: Index_types = None):
+    def __init__(self, path: str, index_name: Indexes, index_type: Index_types = None):
         """
         Initializes the Index_reader.
 
@@ -37,5 +39,3 @@ class Index_reader:
 
         with open(absolute_path, 'r') as file:
             return json.load(file)
-
-
