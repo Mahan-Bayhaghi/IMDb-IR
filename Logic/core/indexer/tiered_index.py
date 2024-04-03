@@ -1,10 +1,10 @@
-from .indexes_enum import Indexes, Index_types
-from .index_reader import Index_reader
+from Logic.core.indexer.indexes_enum import Indexes, Index_types
+from Logic.core.indexer.index_reader import Index_reader
 import json
 
 
 class Tiered_index:
-    def __init__(self, path="index/"):
+    def __init__(self, path="./saved_indexes/"):
         """
         Initializes the Tiered_index.
 
@@ -61,7 +61,20 @@ class Tiered_index:
         first_tier = {}
         second_tier = {}
         third_tier = {}
-        #TODO
+        # TODO
+        all_tiers = [third_tier, second_tier, first_tier]
+        for term, saved_index in current_index.items():
+            # each saved_index itself is a dict such as {term: {document_id: tf}}
+            for document_id, term_frequency in saved_index.items():
+                selected_tier_number = 0
+                if term_frequency >= first_tier_threshold:
+                    selected_tier_number += 1
+                if term_frequency >= second_tier_threshold:
+                    selected_tier_number += 1
+                selected_tier = all_tiers[selected_tier_number]
+                if term not in selected_tier.keys():
+                    selected_tier[term] = {}
+                selected_tier[term][document_id] = term_frequency
         return {
             "first_tier": first_tier,
             "second_tier": second_tier,
@@ -79,5 +92,5 @@ class Tiered_index:
 
 if __name__ == "__main__":
     tiered = Tiered_index(
-        path="index/"
+        path="saved_indexes/"
     )
