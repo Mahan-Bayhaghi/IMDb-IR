@@ -3,6 +3,7 @@ import sys
 
 sys.path.append("../")
 # from Logic import utils
+import Logic.utils
 import time
 from enum import Enum
 import random
@@ -51,7 +52,7 @@ def search_handling(
     search_method,
 ):
     if search_button:
-        corrected_query = utils.correct_text(search_term, utils.movies_dataset)
+        corrected_query = Logic.utils.correct_text(search_term, Logic.utils.movies_dataset)
 
         if corrected_query != search_term:
             st.warning(f"Your search terms were corrected to: {corrected_query}")
@@ -60,7 +61,7 @@ def search_handling(
         with st.spinner("Searching..."):
             time.sleep(0.5)  # for showing the spinner! (can be removed)
             start_time = time.time()
-            result = utils.search(
+            result = Logic.utils.search(
                 search_term,
                 search_max_num,
                 search_method,
@@ -76,7 +77,7 @@ def search_handling(
 
             for i in range(len(result)):
                 card = st.columns([3, 1])
-                info = utils.get_movie_by_id(result[i][0], utils.movies_dataset)
+                info = Logic.utils.get_movie_by_id(result[i][0], Logic.utils.movies_dataset)
                 with card[0].container():
                     st.title(info["title"])
                     st.markdown(f"[Link to movie]({info['URL']})")

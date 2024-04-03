@@ -12,7 +12,8 @@ class SearchEngine:
         Initializes the search engine.
 
         """
-        path = '/indexer/saved_indexes/'
+        # path = './saved_indexes/'
+        path = 'D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/indexer/saved_indexes/'
         self.document_indexes = {
             Indexes.STARS: Index_reader(path, Indexes.STARS),
             Indexes.GENRES: Index_reader(path, Indexes.GENRES),
