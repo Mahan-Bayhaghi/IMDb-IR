@@ -29,14 +29,13 @@ class Index_reader:
             The index.
         """
         absolute_path = self.path + self.index_name.value
-        
-        if self.index_type != None:
+
+        if self.index_type is not None:
             absolute_path = absolute_path + "_" + self.index_type.value
 
         absolute_path = absolute_path + "_index.json"
-        
+
         with open(absolute_path, 'r') as file:
             return json.load(file)
-        
-    
-        
+
+

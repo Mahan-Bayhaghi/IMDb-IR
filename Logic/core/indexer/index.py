@@ -469,11 +469,11 @@ def import_data(filepath):
 def main():
     preprocessed_documents = import_data("../../IMDB_crawled_preprocessed.json")[:]
     index = Index(preprocessed_documents)
-    index.store_all_index(path="./")
+    index.store_all_index(path="./saved_indexes/")
 
     # # check methods
     index.check_add_remove_is_correct()
-    index.load_index("./")
+    index.load_index("./saved_indexes/")
     print(
         f"index loaded correctly : "
         f"{index.check_if_index_loaded_correctly(Indexes.GENRES.value, index.index[Indexes.GENRES.value])}")
