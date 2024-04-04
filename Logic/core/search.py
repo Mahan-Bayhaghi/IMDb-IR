@@ -1,7 +1,7 @@
 import json
 import numpy as np
-from .preprocess import Preprocessor
-from .scorer import Scorer
+from Logic.core.preprocess import Preprocessor
+from Logic.core.scorer import Scorer
 from Logic.core.indexer.indexes_enum import Indexes, Index_types
 from Logic.core.indexer.index_reader import Index_reader
 
@@ -30,8 +30,9 @@ class SearchEngine:
             Indexes.SUMMARIES: Index_reader(path, Indexes.SUMMARIES, Index_types.DOCUMENT_LENGTH)
         }
         self.metadata_index = Index_reader(path, Indexes.DOCUMENTS, Index_types.METADATA)
+        self.number_of_documents = self.metadata_index.index["document_count"]
 
-    def search(self, query, method, weights, safe_ranking = True, max_results=10):
+    def search(self, query, method, weights, safe_ranking=True, max_results=10):
         """
         searches for the query in the indexes.
 
@@ -56,7 +57,8 @@ class SearchEngine:
         """
 
         preprocessor = Preprocessor([query])
-        query = preprocessor.preprocess()[0].split()
+        # query = preprocessor.preprocess()[0].split()
+        query = preprocessor.preprocess_one_text(query).split()  # tokenized preprocessed query list
 
         scores = {}
         if safe_ranking:
@@ -67,7 +69,7 @@ class SearchEngine:
         final_scores = {}
 
         self.aggregate_scores(weights, scores, final_scores)
-        
+
         result = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
         if max_results is not None:
             result = result[:max_results]
@@ -88,7 +90,22 @@ class SearchEngine:
             The final scores of the documents.
         """
         # TODO
-        pass
+        for document_id in scores.keys():
+            document_scores = scores[document_id]
+            final_document_score = 0
+            for field in document_scores.keys():
+                if field not in weights.keys():
+                    raise ValueError("Invalid field ! please provide valid fields to search")
+                final_document_score += document_scores[field] * weights[field]
+            final_scores[document_id] = final_document_score
+
+        fs = []
+        for k, v in final_scores.items():
+            fs.append((k, v))
+        fs.sort(key=lambda x: x[1], reverse=True)
+        print(f"sorted final scores is \n {fs} \n ------")
+
+
 
     def find_scores_with_unsafe_ranking(self, query, method, weights, max_results, scores):
         """
@@ -109,7 +126,7 @@ class SearchEngine:
         """
         for field in weights:
             for tier in ["first_tier", "second_tier", "third_tier"]:
-                #TODO
+                # TODO
                 pass
 
     def find_scores_with_safe_ranking(self, query, method, weights, scores):
@@ -129,8 +146,21 @@ class SearchEngine:
         """
 
         for field in weights:
-            #TODO
-            pass
+            # TODO
+            index = self.document_indexes[field].index
+            index_scorer = Scorer(index, self.number_of_documents)
+            if method == "OkapiBM25":
+                scoring_result = index_scorer.compute_socres_with_okapi_bm25\
+                    (query, self.metadata_index.index["average_document_length"][field.value],
+                     self.document_lengths_index[field].index)
+            else:
+                scoring_result = index_scorer.compute_scores_with_vector_space_model(query, method)
+            # print(f"scoring result for query <{query}> in field <{field}> is \n {scoring_result}")
+            for document_id in scoring_result.keys():
+                if document_id not in scores.keys():
+                    scores[document_id] = {}
+                scores[document_id][field] = scoring_result[document_id]
+            # print(f"scores dict is : {scores}")
 
     def merge_scores(self, scores1, scores2):
         """
@@ -149,18 +179,23 @@ class SearchEngine:
             The merged dictionary of scores.
         """
 
-        #TODO
+        # TODO
 
 
 if __name__ == '__main__':
     search_engine = SearchEngine()
-    query = "spider man in wonderland"
+    # query = "spider man in wonderland"
+    # query = "amazing spider man went to shop"
+    query = "andrew garfield spiderman"
+
     method = "lnc.ltc"
+    # method = "OkapiBM25"
+
     weights = {
         Indexes.STARS: 1,
         Indexes.GENRES: 1,
         Indexes.SUMMARIES: 1
     }
-    result = search_engine.search(query, method, weights)
+    result = search_engine.search(query, method, weights, safe_ranking=True, max_results=10)
 
-    print(result)
+    print(f"final search result is \n {result}")

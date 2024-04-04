@@ -72,8 +72,11 @@ class Scorer:
         # TODO
         idf = self.idf.get(term, None)
         if idf is None:
-            df = len(self.index.get(term).keys())
-            idf = np.log(self.N / df)
+            df = len(self.index.get(term, {}).keys())
+            if df != 0:
+                idf = np.log(self.N / df)
+            else:
+                idf = 1
             self.idf[term] = idf
 
         return idf
