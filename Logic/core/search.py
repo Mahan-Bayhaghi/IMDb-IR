@@ -122,10 +122,11 @@ class SearchEngine:
         scores : dict
             The scores of the documents.
         """
-        for field in weights:
-            tiered_index = self.tiered_index[field].index
-            for tier in ["first_tier", "second_tier", "third_tier"]:
+        for tier in ["first_tier", "second_tier", "third_tier"]:
+            tier_scores = {}
+            for field in weights:
                 # TODO
+                tiered_index = self.tiered_index[field].index
                 index_scorer = Scorer(tiered_index[tier], self.number_of_documents)
                 print(f"field {field} and tier {tier} index loaded {index_scorer}")
                 if method == "OkapiBM25":
@@ -134,7 +135,6 @@ class SearchEngine:
                          self.document_lengths_index[field].index)
                 else:
                     scoring_result = index_scorer.compute_scores_with_vector_space_model(query, method)
-                tier_scores = {}
                 for document_id in scoring_result.keys():
                     if document_id not in tier_scores.keys():
                         tier_scores[document_id] = {}
@@ -217,8 +217,7 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # query = "spider man in wonderland"
-    # query = "amazing spider man went to shop"
-    query = "andrew garfield spiderman"
+    query = "amazing spider man went to shop"
 
     method = "lnc.ltc"
     # method = "OkapiBM25"
@@ -229,6 +228,6 @@ if __name__ == '__main__':
         Indexes.SUMMARIES: 1
     }
     # result = search_engine.search(query, method, weights, safe_ranking=True, max_results=10)
-    result = search_engine.search(query, method, weights, safe_ranking=False, max_results=50)
+    result = search_engine.search(query, method, weights, safe_ranking=False, max_results=10)
 
     print(f"final search result is \n {result}")
