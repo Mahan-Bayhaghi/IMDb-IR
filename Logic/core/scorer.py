@@ -3,7 +3,7 @@ import math
 
 import numpy as np
 
-from indexer import index_reader, indexes_enum
+from Logic.core.indexer import index_reader, indexes_enum
 
 
 class Scorer:
