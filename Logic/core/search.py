@@ -127,7 +127,8 @@ class SearchEngine:
             for field in weights:
                 # TODO
                 tiered_index = self.tiered_index[field].index
-                index_scorer = Scorer(tiered_index[tier], self.number_of_documents)
+                normal_index = self.document_indexes[field].index  # will be used to compute dfs, tf and idf
+                index_scorer = Scorer(tiered_index[tier], self.number_of_documents, index_needed_for_dfs=normal_index)
                 print(f"field {field} and tier {tier} index loaded {index_scorer}")
                 if method == "OkapiBM25":
                     scoring_result = index_scorer.compute_socres_with_okapi_bm25 \
@@ -198,7 +199,7 @@ class SearchEngine:
         for field in weights:
             # TODO
             index = self.document_indexes[field].index
-            index_scorer = Scorer(index, self.number_of_documents)
+            index_scorer = Scorer(index, self.number_of_documents, index_needed_for_dfs=index)
             if method == "OkapiBM25":
                 scoring_result = index_scorer.compute_socres_with_okapi_bm25 \
                     (query, self.metadata_index.index["average_document_length"][field.value],
@@ -217,17 +218,17 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # query = "spider man in wonderland"
-    query = "amazing spider man went to shop"
+    query = "amazing spiderman movie"
 
     method = "lnc.ltc"
     # method = "OkapiBM25"
 
     weights = {
         Indexes.STARS: 1,
-        Indexes.GENRES: 1,
-        Indexes.SUMMARIES: 1
+        Indexes.GENRES: 0.5,
+        Indexes.SUMMARIES: 2
     }
-    # result = search_engine.search(query, method, weights, safe_ranking=True, max_results=10)
-    result = search_engine.search(query, method, weights, safe_ranking=False, max_results=10)
+    # result = search_engine.search(query, method, weights, safe_ranking=True, max_results=20)
+    result = search_engine.search(query, method, weights, safe_ranking=False, max_results=20)
 
     print(f"final search result is \n {result}")

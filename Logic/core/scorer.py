@@ -7,7 +7,7 @@ from indexer import index_reader, indexes_enum
 
 
 class Scorer:
-    def __init__(self, index, number_of_documents):
+    def __init__(self, index, number_of_documents, index_needed_for_dfs=None):
         """
         Initializes the Scorer.
 
@@ -22,6 +22,10 @@ class Scorer:
         self.index = index
         self.idf = {}
         self.N = number_of_documents
+        if index_needed_for_dfs is not None:
+            self.index_needed_for_dfs = index_needed_for_dfs
+        else:
+            self.index_needed_for_dfs = index
 
     def get_list_of_documents(self, query):
         """
@@ -72,7 +76,7 @@ class Scorer:
         # TODO
         idf = self.idf.get(term, None)
         if idf is None:
-            df = len(self.index.get(term, {}).keys())
+            df = len(self.index_needed_for_dfs.get(term, {}).keys())
             if df != 0:
                 idf = np.log(self.N / df)
             else:
@@ -156,7 +160,7 @@ class Scorer:
 
         for term in query:
             # tf handling for document
-            tf_in_document = self.index.get(term, {}).get(document_id, 0)  # TODO: search in index using Trie
+            tf_in_document = self.index_needed_for_dfs.get(term, {}).get(document_id, 0)  # TODO: search in index using Trie
             if document_method[0] == 'l':
                 tf_in_document = np.log(tf_in_document + 1)
             # df handling for document
@@ -171,7 +175,7 @@ class Scorer:
                 tf_in_query = np.log(tf_in_query + 1)
             # df handling for query
             df_in_query = 1
-            if query[1] == 't':
+            if query_method[1] == 't':
                 df_in_query = self.get_idf(term)
             query_vector.append(tf_in_query * df_in_query)
 
@@ -248,7 +252,7 @@ class Scorer:
         # TODO
         score = 0
         for term in query:
-            tf = self.index.get(term, {}).get(document_id, 0)
+            tf = self.index_needed_for_dfs.get(term, {}).get(document_id, 0)
             idf = self.get_idf(term)
             doc_len = document_lengths.get(document_id, 0)
             score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + (b * doc_len / average_document_field_length)))
