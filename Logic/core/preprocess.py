@@ -7,7 +7,8 @@ from nltk.tokenize import word_tokenize
 
 def load_stopwords(filepath):
     stopwords = []
-    with open(filepath, 'r') as file:
+    absolute_path = "D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/"
+    with open(absolute_path + filepath, 'r') as file:
         for line in file:
             stopwords.append(line.strip())
     return stopwords
@@ -26,7 +27,7 @@ class Preprocessor:
         """
         # TODO
         self.documents = documents
-        self.stopwords = load_stopwords("./stopwords.txt")
+        self.stopwords = load_stopwords("/stopwords.txt")
         # download nltk modules
         # nltk.download('omw-1.4')
         # nltk.download('wordnet')
@@ -48,11 +49,18 @@ class Preprocessor:
             preprocessed_documents.append(preprocessed_document)
         return preprocessed_documents
 
+    def light_preprocess_one_text(self, text):
+        text = self.remove_links(text)
+        text = self.remove_punctuations(text)
+        text = self.remove_stopwords(text)
+        text = ''.join(text).lower()
+        return text
+
     def preprocess_one_text(self, text):
         text = self.remove_links(text)
         text = self.remove_punctuations(text)
         text = self.remove_stopwords(text)
-        text = self.normalize(text)
+        text = self.normalize(''.join(text))
         # the way I implemented the class, tokenization is really not needed !
         # text = self.tokenize(text)
         return text

@@ -59,7 +59,9 @@ class SearchEngine:
 
         preprocessor = Preprocessor([query])
         # query = preprocessor.preprocess()[0].split()
+        print(f"query was {query}")
         query = preprocessor.preprocess_one_text(query).split()  # tokenized preprocessed query list
+        print(f"query is  {query}")
 
         scores = {}
         if safe_ranking:
@@ -95,7 +97,7 @@ class SearchEngine:
             document_scores = scores[document_id]
             final_document_score = 0
             for field in document_scores.keys():
-                if field not in weights.keys():
+                if field not in weights:
                     raise ValueError("Invalid field ! please provide valid fields to search")
                 final_document_score += document_scores[field] * weights[field]
             final_scores[document_id] = final_document_score
@@ -195,7 +197,7 @@ class SearchEngine:
         scores : dict
             The scores of the documents.
         """
-
+        print(f"weights is {weights}")
         for field in weights:
             # TODO
             index = self.document_indexes[field].index
@@ -218,17 +220,19 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # query = "spider man in wonderland"
-    query = "amazing spiderman movie"
+    # query = "andrew garfield"
+    query = "spiderman andrew"
 
-    method = "lnc.ltc"
-    # method = "OkapiBM25"
+    # method = "lnc.ltc"
+    method = "OkapiBM25"
 
     weights = {
         Indexes.STARS: 1,
         Indexes.GENRES: 0.5,
         Indexes.SUMMARIES: 2
     }
-    # result = search_engine.search(query, method, weights, safe_ranking=True, max_results=20)
-    result = search_engine.search(query, method, weights, safe_ranking=False, max_results=20)
+
+    result = search_engine.search(query, method, weights, safe_ranking=True, max_results=10)
+    # result = search_engine.search(query, method, weights, safe_ranking=False, max_results=20)
 
     print(f"final search result is \n {result}")

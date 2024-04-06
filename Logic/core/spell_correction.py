@@ -1,5 +1,6 @@
 import collections
 import json
+from Logic.core.preprocess import Preprocessor
 
 
 class SpellCorrection:
@@ -9,10 +10,43 @@ class SpellCorrection:
 
         Parameters
         ----------
-        all_documents : list of str
+        all_documents : list of json objects
             The input documents.
         """
-        self.all_shingled_words, self.word_counter = self.shingling_and_counting(all_documents)
+        valuable_data = self.extract_valuable_data(all_documents)
+        self.all_shingled_words, self.word_counter = self.shingling_and_counting(valuable_data)
+
+    def extract_valuable_data(self, all_documents):
+        """
+
+        Parameters
+        ----------
+        all_documents: list of str
+            The input documents.
+
+        Returns
+        -------
+        valuable_fields: list of str
+            A list of long strings consisting of title, first page summary, stars, directors, summaries and synopsis for each movie
+
+        """
+
+        fields = ["title", "stars", "first_page_summary", "summaries", "synopsis"]
+        valuable_fields = []
+        preprocessor = Preprocessor(None)
+        for document in all_documents:
+            long_str = []
+            for field in fields:
+                if document[field] is None:
+                    continue
+                if field == "first_page_summary" or field == "title":
+                    long_str.append(preprocessor.light_preprocess_one_text(document[field]))
+                else:
+                    for item in document[field]:
+                        long_str.append(preprocessor.light_preprocess_one_text(item) + " ")
+            # print(f"valuable data extracted : {''.join(long_str)}")
+            valuable_fields.append(''.join(long_str))
+        return valuable_fields
 
     def shingle_word(self, word, k=2):
         """
@@ -160,11 +194,9 @@ def import_data(filepath):
 
 
 def main():
-    crawled_data = import_data('../IMDB_crawled.json')[:400]
-    only_fps = [doc["first_page_summary"] for doc in crawled_data]
-    as_str = [str(doc).lower() for doc in crawled_data]
-    spell_checker = SpellCorrection(as_str)
-    print(spell_checker.find_nearest_words("separtion"))
+    crawled_data = import_data('../IMDB_crawled.json')[:]
+    spell_checker = SpellCorrection(crawled_data)
+    print(spell_checker.find_nearest_words("abslutly"))
     print(spell_checker.spell_check("andre garfild"))
 
 

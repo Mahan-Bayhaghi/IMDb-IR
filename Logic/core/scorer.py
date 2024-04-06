@@ -40,19 +40,21 @@ class Scorer:
         -------
         list
             A list of documents that contain at least one of the terms in the query.
-        
+
         Note
         ---------
             The current approach is not optimal but we use it due to the indexing structure of the dict we're using.
             If we had pairs of (document_id, tf) sorted by document_id, we could improve this.
                 We could initialize a list of pointers, each pointing to the first element of each list.
                 Then, we could iterate through the lists in parallel.
-            
+
         """
         list_of_documents = []
+        print(f"query was {query}")
         for term in query:
             if term in self.index.keys():
                 list_of_documents.extend(self.index[term].keys())
+            print(f"retrieved for <{term}> : {list_of_documents}")
         return list(set(list_of_documents))
 
     def get_idf(self, term):
@@ -68,7 +70,7 @@ class Scorer:
         -------
         float
             The inverse document frequency of the term.
-        
+
         Note
         -------
             It was better to store dfs in a separate dict in preprocessing.
@@ -77,10 +79,11 @@ class Scorer:
         idf = self.idf.get(term, None)
         if idf is None:
             df = len(self.index_needed_for_dfs.get(term, {}).keys())
-            if df != 0:
-                idf = np.log(self.N / df)
-            else:
-                idf = 1
+            idf = np.log(self.N / (df+1))
+            # if df != 0:
+            #     idf = np.log(self.N / df)
+            # else:
+            #     idf = 1
             self.idf[term] = idf
 
         return idf
@@ -207,7 +210,7 @@ class Scorer:
         document_lengths : dict
             A dictionary of the document lengths. The keys are the document IDs, and the values are
             the document's length in that field.
-        
+
         Returns
         -------
         dict

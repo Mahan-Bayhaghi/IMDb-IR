@@ -52,6 +52,7 @@ def search_handling(
     search_method,
 ):
     if search_button:
+        utils.movies_dataset = utils.import_dataset()
         corrected_query = utils.correct_text(search_term, utils.movies_dataset)
 
         if corrected_query != search_term:
