@@ -59,9 +59,7 @@ class SearchEngine:
 
         preprocessor = Preprocessor([query])
         # query = preprocessor.preprocess()[0].split()
-        print(f"query was {query}")
         query = preprocessor.preprocess_one_text(query).split()  # tokenized preprocessed query list
-        print(f"query is  {query}")
 
         scores = {}
         if safe_ranking:
@@ -101,11 +99,6 @@ class SearchEngine:
                     raise ValueError("Invalid field ! please provide valid fields to search")
                 final_document_score += document_scores[field] * weights[field]
             final_scores[document_id] = final_document_score
-
-        fs = []
-        for k, v in final_scores.items():
-            fs.append((k, v))
-        fs.sort(key=lambda x: x[1], reverse=True)
 
     def find_scores_with_unsafe_ranking(self, query, method, weights, max_results, scores):
         """
@@ -220,7 +213,6 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # query = "spider man in wonderland"
-    # query = "andrew garfield"
     query = "spiderman andrew"
 
     # method = "lnc.ltc"

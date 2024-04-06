@@ -149,7 +149,6 @@ class SpellCorrection:
 
         all_candidates.sort(key=lambda x: x[1], reverse=True)
         top5_candidates = [candidate for candidate in all_candidates[:5]]
-
         return top5_candidates
 
     def spell_check(self, query: str):
@@ -170,16 +169,19 @@ class SpellCorrection:
 
         # TODO: Do spell correction here.
         query_tokens = query.split()
-
         for token in query_tokens:
             top5_candidates = self.find_nearest_words(token)
             top5_candidate_words = [candidate[0] for candidate in top5_candidates]
             max_tf = max([self.word_counter[word] for word in top5_candidate_words])
             normalized_tf_scores = {candidate: self.word_counter[candidate] / max_tf for candidate in top5_candidate_words}
 
-            # jaccard score * normalized-tf
-            candidates_with_scores =\
-                [(candidate[0], candidate[1]*normalized_tf_scores[candidate[0]]) for candidate in top5_candidates]
+            # jaccard score * normalized-tf if word does not really exist !
+            candidates_with_scores = []
+            for candidate in top5_candidates:
+                if candidate[1] == 1:   # word really exists
+                    candidates_with_scores.append((candidate[0], 2*candidate[1]*normalized_tf_scores[candidate[0]]))
+                else:
+                    candidates_with_scores.append((candidate[0], candidate[1]*normalized_tf_scores[candidate[0]]))
             candidates_with_scores.sort(key=lambda x: x[1], reverse=True)
 
             final_result.append(candidates_with_scores[0][0])
@@ -197,7 +199,10 @@ def main():
     crawled_data = import_data('../IMDB_crawled.json')[:]
     spell_checker = SpellCorrection(crawled_data)
     print(spell_checker.find_nearest_words("abslutly"))
+    print(spell_checker.spell_check("abslutly"))
     print(spell_checker.spell_check("andre garfild"))
+    print(spell_checker.find_nearest_words("multiverse"))
+    print(spell_checker.spell_check("multiverse"))
 
 
 if __name__ == "__main__":

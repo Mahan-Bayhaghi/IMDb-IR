@@ -13,13 +13,7 @@ search_engine = SearchEngine()
 def import_dataset():
     with open("D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/IMDB_crawled.json", 'r') as file:
         data = json.load(file)
-    # for item in data[:1]:
-    #     print(f"{type(item)} --> {item}")
     return data
-    # path = 'D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/indexer/saved_indexes/'
-    # document_index = Index_reader(path, Indexes.DOCUMENTS).index
-    # print(f"type of document index is : {type(document_index)}")
-    # return document_index
 
 
 def correct_text(text: str, all_documents: List) -> str:
@@ -48,7 +42,7 @@ def search(
         query: str,
         max_result_count: int,
         method: str = "ltn-lnn",
-        weights_list: list = [0.3, 0.3, 0.4],
+        weights_list=None,
         should_print=False,
         preferred_genre: str = None,
 ):
@@ -75,7 +69,8 @@ def search(
     list
     Retrieved documents with snippet
     """
-    weights = ...  # TODO
+    if weights_list is None:
+        weights_list = [0.3, 0.3, 0.4]
     weights = {
         Indexes.STARS: weights_list[0],
         Indexes.GENRES: weights_list[1],
@@ -88,7 +83,6 @@ def search(
 
 
 def get_movie_by_id(id: str, movies_dataset: List[Dict[str, str]]) -> Dict[str, str]:
-    # def get_movie_by_id(id: str, movies_dataset: Dict) -> Dict[str, str]:
     """
     Get movie by its id
 
@@ -105,17 +99,6 @@ def get_movie_by_id(id: str, movies_dataset: List[Dict[str, str]]) -> Dict[str, 
     dict
         The movie with the given id
     """
-    # result = movies_dataset.get(
-    #     id,
-    #     {
-    #         "Title": "This is movie's title",
-    #         "Summary": "This is a summary",
-    #         "URL": "https://www.imdb.com/title/tt0111161/",
-    #         "Cast": ["Morgan Freeman", "Tim Robbins"],
-    #         "Genres": ["Drama", "Crime"],
-    #         "Image_URL": "https://m.media-amazon.com/images/M/MV5BNDE3ODcxYzMtY2YzZC00NmNlLWJiNDMtZDViZWM2MzIxZDYwXkEyXkFqcGdeQXVyNjAwNDUxODI@._V1_.jpg",
-    #     },
-    # )
     result = {}
     for movie in movies_dataset:
         if movie["id"] == id:
