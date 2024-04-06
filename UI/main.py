@@ -10,7 +10,7 @@ from enum import Enum
 from Logic.core.snippet import Snippet
 
 snippet_obj = Snippet(
-    number_of_words_on_each_side=5
+    number_of_words_on_each_side=10
 )  # You can change this parameter, if needed.
 
 

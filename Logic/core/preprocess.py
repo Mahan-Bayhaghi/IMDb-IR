@@ -170,8 +170,8 @@ class Preprocessor:
 
         Returns
         ----------
-        list
-            The list of words with stopwords removed.
+        str
+            The string of words with stopwords removed.
         """
         words = text.split()
         cleaned_words = [word for word in words if word.lower() not in self.stopwords]

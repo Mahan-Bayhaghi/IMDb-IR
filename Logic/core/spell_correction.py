@@ -179,7 +179,9 @@ class SpellCorrection:
             candidates_with_scores = []
             for candidate in top5_candidates:
                 if candidate[1] == 1:   # word really exists
-                    candidates_with_scores.append((candidate[0], 2*candidate[1]*normalized_tf_scores[candidate[0]]))
+                    # TODO: decide what to do in the next to lines !!!
+                    # candidates_with_scores.append((candidate[0], 2*candidate[1]*normalized_tf_scores[candidate[0]]))
+                    candidates_with_scores.append((candidate[0], 1))
                 else:
                     candidates_with_scores.append((candidate[0], candidate[1]*normalized_tf_scores[candidate[0]]))
             candidates_with_scores.sort(key=lambda x: x[1], reverse=True)

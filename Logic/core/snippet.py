@@ -1,3 +1,6 @@
+import re
+from Logic.core.preprocess import Preprocessor
+
 class Snippet:
     def __init__(self, number_of_words_on_each_side=5):
         """
@@ -26,8 +29,11 @@ class Snippet:
         """
 
         # TODO: remove stop words from the query.
-
-        return
+        preprocessor = Preprocessor(None)
+        print(f"query was {query}")
+        filtered_query = preprocessor.remove_stopwords(query)
+        print(f"query is {filtered_query}")
+        return filtered_query
 
     def find_snippet(self, doc, query):
         """
@@ -52,5 +58,34 @@ class Snippet:
         not_exist_words = []
 
         # TODO: Extract snippet and the tokens which are not present in the doc.
+        filtered_query = self.remove_stop_words_from_query(query)
+        query_tokens = filtered_query.split()
+        occurrences = {}
+        for token in query_tokens:
+            occurrences[token] = [m.start() for m in re.finditer(r'\b%s\b' % re.escape(token), doc.lower())]
+        # generate snippet using occurrences
+        final_snippet = ""
+        for token in query_tokens:
+            print(f"toke is {token}")
+            if token in occurrences:
+                for index in occurrences[token]:
+                    start = max(0, index - self.number_of_words_on_each_side)
+                    end = min(len(doc), index + len(token) + self.number_of_words_on_each_side)
+                    snippet = doc[start:end].strip()
+                    snippet = snippet.replace(token, f'***{token}***')
+                    final_snippet += snippet + " ... "
+            else:
+                not_exist_words.append(token)
 
-        return final_snippet, not_exist_words
+        return final_snippet.strip(), not_exist_words
+
+
+if __name__ == "__main__":
+    doc = "The lives of two mob hitmen, a boxer, a gangster and his wife, " \
+          "and a pair of diner bandits intertwine in four tales of violence and redemption."
+
+    query = "gangster and boxer and a nigga coming up"
+    snippet = Snippet()
+    final_snippet, not_exist_words = snippet.find_snippet(doc, query)
+    print(f"Final snippet : {final_snippet}")
+    print(f"Words not found : {not_exist_words}")
