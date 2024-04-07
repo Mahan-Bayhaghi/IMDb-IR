@@ -19,15 +19,17 @@ class color(Enum):
     GREEN = "#00FF00"
     BLUE = "#0000FF"
     YELLOW = "#FFFF00"
-    WHITE = "#FFFFFF"
-    CYAN = "#00FFFF"
+    # WHITE = "#FFFFFF"
+    # CYAN = "#00FFFF"
     MAGENTA = "#FF00FF"
 
 
 def get_summary_with_snippet(movie_info, query):
-    summary = movie_info["first_page_summary"]
+    summary = movie_info["first_page_summary"].lower()
     snippet, not_exist_words = snippet_obj.find_snippet(summary, query)
-    if "***" in snippet:
+    # summary = snippet
+    # return summary
+    if " ***" in snippet:
         snippet = snippet.split()
         for i in range(len(snippet)):
             current_word = snippet[i]
