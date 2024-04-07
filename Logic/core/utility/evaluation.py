@@ -1,10 +1,13 @@
-
+import json
 from typing import List
 
 class Evaluation:
 
     def __init__(self, name: str):
             self.name = name
+
+    def get_json_object(self, document: List[str]):
+        return json.loads(document)
 
     def calculate_precision(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
@@ -22,10 +25,14 @@ class Evaluation:
         float
             The precision of the predicted results
         """
-        precision = 0.0
-
         # TODO: Calculate precision here
-        
+        actual_ids = [self.get_json_object(doc)["id"] for doc in actual]
+        predicted_ids = [self.get_json_object(doc)["id"] for doc in predicted]
+        tp = 0
+        for predicted_id in predicted_ids:
+            if predicted_id in actual_ids:
+                tp += 1
+        precision = tp / len(predicted)
         return precision
     
     def calculate_recall(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
@@ -44,10 +51,14 @@ class Evaluation:
         float
             The recall of the predicted results
         """
-        recall = 0.0
-
         # TODO: Calculate recall here
-
+        actual_ids = [self.get_json_object(doc)["id"] for doc in actual]
+        predicted_ids = [self.get_json_object(doc)["id"] for doc in predicted]
+        tp = 0
+        for predicted_id in predicted_ids:
+            if predicted_id in actual_ids:
+                tp += 1
+        recall = tp / len(actual)
         return recall
     
     def calculate_F1(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
@@ -67,9 +78,10 @@ class Evaluation:
             The F1 score of the predicted results    
         """
         f1 = 0.0
-
         # TODO: Calculate F1 here
-
+        recall = self.calculate_recall(actual, predicted)
+        precision = self.calculate_precision(actual, predicted)
+        f1 = (2 * recall * precision) / (recall + precision)
         return f1
     
     def calculate_AP(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
