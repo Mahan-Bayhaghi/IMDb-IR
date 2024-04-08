@@ -1,13 +1,15 @@
 import json
 from typing import List
 
+
+# *** NOTE ***
+# each list is a list of strings
+# we will assume first index is query and the rest are relevant movie ids retrieved
+
 class Evaluation:
 
     def __init__(self, name: str):
-            self.name = name
-
-    def get_json_object(self, document: List[str]):
-        return json.loads(document)
+        self.name = name
 
     def calculate_precision(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
@@ -26,15 +28,18 @@ class Evaluation:
             The precision of the predicted results
         """
         # TODO: Calculate precision here
-        actual_ids = [self.get_json_object(doc)["id"] for doc in actual]
-        predicted_ids = [self.get_json_object(doc)["id"] for doc in predicted]
-        tp = 0
-        for predicted_id in predicted_ids:
-            if predicted_id in actual_ids:
-                tp += 1
-        precision = tp / len(predicted)
+        predict_precisions = []
+        for index in range(len(predicted)):
+            predict = predicted[index]
+            query = predict[0]
+            predicted_ids = predict[1:]
+            predict_precision = len([set(predicted_ids).intersection(set(actual[index]))]) / len(predicted_ids)
+            predict_precisions.append(predict_precision)
+        precision = 0.0
+        if len(predict_precisions) != 0:
+            precision = sum(predict_precisions) / len(predict_precisions)
         return precision
-    
+
     def calculate_recall(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the recall of the predicted results
@@ -52,15 +57,18 @@ class Evaluation:
             The recall of the predicted results
         """
         # TODO: Calculate recall here
-        actual_ids = [self.get_json_object(doc)["id"] for doc in actual]
-        predicted_ids = [self.get_json_object(doc)["id"] for doc in predicted]
-        tp = 0
-        for predicted_id in predicted_ids:
-            if predicted_id in actual_ids:
-                tp += 1
-        recall = tp / len(actual)
+        predict_recalls = []
+        for index in range(len(predicted)):
+            predict = predicted[index]
+            query = predict[0]
+            predicted_ids = predict[1:]
+            predict_recall = len([set(predicted_ids).intersection(set(actual[index]))]) / len(actual[index])
+            predict_recalls.append(predict_recall)
+        recall = 0.0
+        if len(predict_recalls) != 0:
+            recall = sum(predict_recalls) / len(predict_recalls)
         return recall
-    
+
     def calculate_F1(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the F1 score of the predicted results
@@ -77,13 +85,20 @@ class Evaluation:
         float
             The F1 score of the predicted results    
         """
-        f1 = 0.0
         # TODO: Calculate F1 here
-        recall = self.calculate_recall(actual, predicted)
-        precision = self.calculate_precision(actual, predicted)
-        f1 = (2 * recall * precision) / (recall + precision)
+        predict_f1s = []
+        for index in range(len(predicted)):
+            recall = self.calculate_recall(actual, predicted)
+            precision = self.calculate_precision(actual, predicted)
+            predict_f1 = 0.0
+            if (precision + recall) > 0:
+                predict_f1 = (2 * recall * precision) / (recall + precision)
+            predict_f1s.append(predict_f1)
+        f1 = 0.0
+        if len(predict_f1s) > 0:
+            f1 = sum(predict_f1s) / len(predict_f1s)
         return f1
-    
+
     def calculate_AP(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the Mean Average Precision of the predicted results
@@ -105,7 +120,7 @@ class Evaluation:
         # TODO: Calculate AP here
 
         return AP
-    
+
     def calculate_MAP(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the Mean Average Precision of the predicted results
@@ -127,7 +142,7 @@ class Evaluation:
         # TODO: Calculate MAP here
 
         return MAP
-    
+
     def cacluate_DCG(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the Normalized Discounted Cumulative Gain (NDCG) of the predicted results
@@ -149,7 +164,7 @@ class Evaluation:
         # TODO: Calculate DCG here
 
         return DCG
-    
+
     def cacluate_NDCG(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the Normalized Discounted Cumulative Gain (NDCG) of the predicted results
@@ -171,7 +186,7 @@ class Evaluation:
         # TODO: Calculate NDCG here
 
         return NDCG
-    
+
     def cacluate_RR(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the Mean Reciprocal Rank of the predicted results
@@ -193,7 +208,7 @@ class Evaluation:
         # TODO: Calculate MRR here
 
         return RR
-    
+
     def cacluate_MRR(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
         """
         Calculates the Mean Reciprocal Rank of the predicted results
@@ -215,7 +230,6 @@ class Evaluation:
         # TODO: Calculate MRR here
 
         return MRR
-    
 
     def print_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
         """
@@ -245,8 +259,7 @@ class Evaluation:
         """
         print(f"name = {self.name}")
 
-        #TODO: Print the evaluation metrics
-      
+        # TODO: Print the evaluation metrics
 
     def log_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
         """
@@ -274,9 +287,8 @@ class Evaluation:
             The Mean Reciprocal Rank of the predicted results
             
         """
-        
-        #TODO: Log the evaluation metrics using Wandb
 
+        # TODO: Log the evaluation metrics using Wandb
 
     def calculate_evaluation(self, actual: List[List[str]], predicted: List[List[str]]):
         """
@@ -301,9 +313,6 @@ class Evaluation:
         rr = self.cacluate_RR(actual, predicted)
         mrr = self.cacluate_MRR(actual, predicted)
 
-        #call print and viualize functions
+        # call print and viualize functions
         self.print_evaluation(precision, recall, f1, ap, map_score, dcg, ndcg, rr, mrr)
         self.log_evaluation(precision, recall, f1, ap, map_score, dcg, ndcg, rr, mrr)
-
-
-
