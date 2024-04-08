@@ -27,8 +27,6 @@ class color(Enum):
 def get_summary_with_snippet(movie_info, query):
     summary = movie_info["first_page_summary"].lower()
     snippet, not_exist_words = snippet_obj.find_snippet(summary, query)
-    # summary = snippet
-    # return summary
     if " ***" in snippet:
         snippet = snippet.split()
         for i in range(len(snippet)):

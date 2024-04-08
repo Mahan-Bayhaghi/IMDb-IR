@@ -28,11 +28,11 @@ class Snippet:
         str
             The query without stop words.
         """
-
         # TODO: remove stop words from the query.
         preprocessor = Preprocessor(None)
         filtered_query = preprocessor.remove_stopwords(query)
-
+        filtered_query = preprocessor.remove_punctuations(filtered_query)
+        filtered_query = filtered_query.lower()
         return filtered_query
 
     def find_snippet(self, doc, query):
@@ -54,43 +54,92 @@ class Snippet:
         not_exist_words : list
             Words in the query which don't exist in the doc.
         """
-        not_exist_words = []
-
-        # TODO: Extract snippet and the tokens which are not present in the doc.
-        filtered_query = self.remove_stop_words_from_query(query)
         preprocessor = Preprocessor(None)
-        filtered_query = preprocessor.normalize(filtered_query)
-        filtered_doc = self.remove_stop_words_from_query(doc).lower()
-        filtered_doc = preprocessor.normalize(filtered_doc)
-        query_tokens = filtered_query.split()
-        occurrences = {}
-        for token in query_tokens:
-            occurrences[token] = [m.start() for m in re.finditer(r'\b%s\b' % re.escape(token), filtered_doc)]
+        doc = self.remove_stop_words_from_query(doc)
+        doc_terms = doc.split()
+        query = self.remove_stop_words_from_query(query)
+        query_terms = query.split()
 
-        # generate snippet using occurrences
-        final_snippet = ""
-        for token in query_tokens:
-            if token in occurrences:
-                for index in occurrences[token]:
-                    start = max(0, index - self.number_of_words_on_each_side)
-                    end = min(len(doc), index + len(token) + self.number_of_words_on_each_side)
-                    snippet = filtered_doc[start:end].strip()
-                    snippet = snippet.replace(token, f' ***{token}*** ')
-                    final_snippet += snippet + " ... "
+        doc_occurrence = []
+        for doc_term in doc_terms:
+            if doc_term in query_terms:
+                doc_occurrence.append(1)
             else:
-                not_exist_words.append(token)
+                doc_occurrence.append(0)
 
-        return final_snippet.strip(), not_exist_words
+        exist_words = set()
+        if sum(doc_occurrence) == 1:
+            window_indices = [doc_occurrence.index(1)]
+        else:
+            _, window_indices = find_smallest_window(doc_occurrence, self.number_of_words_on_each_side)
+        for idx, doc_term in enumerate(doc_terms):
+            doc_terms[idx] = f'***{doc_term}***' if idx in window_indices else doc_term
+            if idx in window_indices:
+                exist_words.add(doc_term)
+
+        final_snippet = ' '.join(doc_terms)
+        not_exist_words = list(set(query_terms) - exist_words)
+        return final_snippet, not_exist_words
+        # ------------------------------------------------------------
+        # not_exist_words = []
+        #
+        # filtered_query = self.remove_stop_words_from_query(query)
+        # preprocessor = Preprocessor(None)
+        # filtered_query = preprocessor.normalize(filtered_query)
+        # filtered_doc = self.remove_stop_words_from_query(doc).lower()
+        # filtered_doc = preprocessor.normalize(filtered_doc)
+        # query_tokens = filtered_query.split()
+        # occurrences = {}
+        # for token in query_tokens:
+        #     occurrences[token] = [m.start() for m in re.finditer(r'\b%s\b' % re.escape(token), filtered_doc)]
+        #
+        # # generate snippet using occurrences
+        # final_snippet = ""
+        # for token in query_tokens:
+        #     if token in occurrences:
+        #         for index in occurrences[token]:
+        #             start = max(0, index - self.number_of_words_on_each_side)
+        #             end = min(len(doc), index + len(token) + self.number_of_words_on_each_side)
+        #             snippet = filtered_doc[start:end].strip()
+        #             snippet = snippet.replace(token, f' ***{token}*** ')
+        #             final_snippet += snippet + " ... "
+        #     else:
+        #         not_exist_words.append(token)
+        #
+        # return final_snippet.strip(), not_exist_words
+    # ------------------------------------------------------------
+
+
+def find_smallest_window(arr, k):
+    left, right = 0, 0
+    max_ones = 0
+    max_ones_start = 0
+    max_window_size = 0
+    count = 0
+    ones_indices = []
+    for i in range(len(arr)):
+        if arr[i] == 1:
+            ones_indices.append(i)
+    for i in range(len(arr)):
+        if arr[i] == 1:
+            count += 1
+        if i - left + 1 - count > k:
+            if arr[left] == 1:
+                count -= 1
+            left += 1
+        if i - left + 1 > max_window_size:
+            max_window_size = i - left + 1
+            max_ones = count
+            max_ones_start = left
+    return max_window_size, ones_indices[max_ones_start:max_ones_start + max_ones]
 
 
 if __name__ == "__main__":
     doc = "The lives of two mob hitmen, a boxer, a gangster and his wife, " \
           "and a pair of diner bandits intertwine in four tales of violence and redemption."
-    doc = "Pulp novelist Holly Martins travels to shadowy, postwar Vienna, only to find himself " \
-          "investigating the mysterious death of an old friend, Harry Lime."
-    query = "gangster boxer black man coming up"
-    query = "boxer bandit pulp"
-    snippet = Snippet(number_of_words_on_each_side=10)
+    doc = " man tries to recover a horse stolen from him by a mexican bandit."
+    query = "boxer bandit pulp The"
+    snippet = Snippet(number_of_words_on_each_side=0)
     final_snippet, not_exist_words = snippet.find_snippet(doc, query)
     print(f"Final snippet : {final_snippet}")
     print(f"Words not found : {not_exist_words}")
