@@ -3,6 +3,10 @@ import mmh3
 import numpy as np
 import itertools
 import random
+import json
+import time
+
+from Logic.core.preprocess import Preprocessor
 
 
 class MinHashLSH:
@@ -58,6 +62,7 @@ class MinHashLSH:
         for shingle in all_shingles:
             for item in shingle:
                 unique_shingles.add(item)
+        print(f"number of all shingles : {sum([len(lst) for lst in all_shingles])}")
         print(f"number of unique shingles : {len(unique_shingles)}")
 
         characteristic_matrix = np.zeros((len(self.documents), len(unique_shingles)), dtype=bool)
@@ -80,10 +85,20 @@ class MinHashLSH:
         # TODO
         characteristic_matrix = self.build_characteristic_matrix()
         num_docs, num_shingles = characteristic_matrix.shape
+
         # random permutations
         # using method of chapter 3.3.5 (Mining of Massive Datasets- Leskovec,Rajaraman,Ullman)
         hash_permutations = np.array([np.random.permutation(num_shingles) for _ in range(self.num_hashes)])
-        signatures_matrix = np.full((self.num_hashes, len(self.documents)), np.inf)
+
+        signatures_matrix = np.full((self.num_hashes, num_docs), np.inf)
+
+        # for hash_index in range(self.num_hashes):
+        #     for doc_index in range(num_docs):
+        #         # signatures_matrix[hash_index][num_docs] = idx
+        #         for idx in range(self.num_hashes):
+        #             if characteristic_matrix[doc_index][hash_permutations[hash_index][idx]]:
+        #                 signatures_matrix[hash_index][doc_index] = idx
+
         for i in range(num_docs):
             for j in range(num_shingles):
                 if characteristic_matrix[i, j]:
@@ -113,25 +128,27 @@ class MinHashLSH:
         num_hashes, num_docs = signature.shape
         if rows_per_band is None:
             rows_per_band = int(num_hashes / bands)
-        print(f"threshold : {(1/bands)**(1/rows_per_band)}")
+        print(f"threshold of similarity : {(1 / bands) ** (1 / rows_per_band)}")
         bucket_dict = {}
         for b in range(bands):
             starting_row = b * rows_per_band
             ending_row = starting_row + rows_per_band
             band_hash = {}
             for doc_index in range(num_docs):
-                # band_signature = tuple(signature[starting_row:ending_row, doc_index])
-                band_signature = tuple(sorted(signature[starting_row:ending_row, doc_index]))
-                # TODO: use a hash function for band_signature
-                # band_signature = self.hash_band_signature(band_signature, hash_function='sha1')
+                # TODO: use a hash function for band_signature -> done
+                band_signature = tuple(signature[starting_row:ending_row, doc_index])
 
                 if band_signature in band_hash:
                     bucket_id = band_hash[band_signature]
-                    bucket_dict[bucket_id].append(doc_index)
+                    if doc_index not in bucket_dict[bucket_id]:
+                        bucket_dict[bucket_id].append(doc_index)
+                        # print(
+                        #     f"added doc {doc_index} with band signature {band_signature} to bucket with id {bucket_id} that already had {bucket_dict[bucket_id]}")
                 else:
                     bucket_id = len(bucket_dict)
                     band_hash[band_signature] = bucket_id
                     bucket_dict[bucket_id] = [doc_index]
+
         return bucket_dict
 
     def hash_band_signature(self, band_signature, num_buckets=200, hash_function='md5'):
@@ -155,7 +172,16 @@ class MinHashLSH:
         """
         # TODO: change values of r and b to reach a valid score
         signature_matrix = self.min_hash_signature()
-        buckets_dict = self.lsh_buckets(signature_matrix, bands=num_bands, rows_per_band=num_rows_per_band)
+        all_buckets = self.lsh_buckets(signature_matrix, bands=num_bands, rows_per_band=num_rows_per_band)
+        # aggregate all buckets
+        buckets_dict = {}
+        temp = set()
+        for v in all_buckets.keys():
+            if len(all_buckets[v]) > 1:
+                temp.add(tuple(all_buckets[v]))
+        for idx, v in enumerate(temp):
+            buckets_dict[idx] = v
+
         return buckets_dict
 
     def jaccard_score(self, first_set: set, second_set: set):
@@ -228,3 +254,44 @@ class MinHashLSH:
 
         # a good score is around 0.8
         print("your final score in near duplicate detection:", correct_near_duplicates / all_near_duplicates)
+
+
+def main():
+    def import_all_summaries(filepath, restrict=False, restrict_num=200):
+        with open(filepath, 'r') as file:
+            data = json.load(file)
+        all_movies = [movie for movie in data]
+        preprocessor = Preprocessor(None)
+        temp_summaries = []
+        for movie in all_movies:
+            if len(movie['summaries']) >= 1:
+                temp_summaries.append(movie["summaries"])
+        if restrict:
+            temp_summaries = temp_summaries[:restrict_num]
+        summaries = [preprocessor.preprocess_one_text(' '.join(summary)) for summary in temp_summaries]
+        return summaries
+
+    all_summaries = import_all_summaries("./LSHFakeData_preprocessed.json")
+    all_summaries += import_all_summaries("../IMDB_crawled_preprocessed.json", restrict=True, restrict_num=1000)
+
+    minhash_lsh = MinHashLSH(all_summaries, num_hashes=500)
+    t = time.time()
+    # if num_rows_per_band is not defined, it will match with needed number itself
+    buckets = minhash_lsh.perform_lsh(num_bands=50, num_rows_per_band=None)
+    t = time.time() - t
+    minhash_lsh.jaccard_similarity_test(buckets, all_summaries)
+    print(f"elapsed time for LSH: {t} seconds")
+
+
+if __name__ == "__main__":
+    main()
+
+
+# *******************************************************
+# the result of above code on my test run :             *
+# number of all shingles : 262234                       *
+# number of unique shingles : 146160                    *
+# threshold of similarity : 0.6762433378062414          *
+# your final score in near duplicate detection: 1.0     *
+# elapsed time for LSH: 67.08891892433167 seconds       *
+# *******************************************************
