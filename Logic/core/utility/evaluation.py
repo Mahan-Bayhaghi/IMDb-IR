@@ -199,7 +199,7 @@ class Evaluation:
 
         return NDCG
 
-    def cacluate_RR(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
+    def calculate_RR(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
         Calculates the Mean Reciprocal Rank of the predicted results
 
@@ -212,13 +212,18 @@ class Evaluation:
 
         Returns
         -------
-        float
+        list[float]
             The Reciprocal Rank of the predicted results
         """
-        RR = 0.0
-
-        # TODO: Calculate MRR here
-
+        RR = []
+        # TODO: Calculate RR here
+        for index,predict in enumerate(predicted):
+            query = predict[0]
+            predicted_ids = predict[1:]
+            actual_ids = actual[index]
+            for i, predicted_id in enumerate(predicted_ids):
+                if predicted_id in actual_ids:
+                    RR.append(1 / (i+1))
         return RR
 
     def cacluate_MRR(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
@@ -237,10 +242,11 @@ class Evaluation:
         float
             The MRR of the predicted results
         """
-        MRR = 0.0
-
         # TODO: Calculate MRR here
-
+        RR = self.calculate_RR(actual, predicted)
+        MRR = 0.0
+        if len(RR) > 0:
+            MRR = sum(RR) / len(RR)
         return MRR
 
     def print_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
