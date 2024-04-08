@@ -99,7 +99,7 @@ class Evaluation:
             f1 = sum(predict_f1s) / len(predict_f1s)
         return f1
 
-    def calculate_AP(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
+    def calculate_AP(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
         Calculates the Mean Average Precision of the predicted results
 
@@ -112,13 +112,24 @@ class Evaluation:
 
         Returns
         -------
-        float
+        list[float]
             The Average Precision of the predicted results
         """
-        AP = 0.0
+        AP = []
 
         # TODO: Calculate AP here
-
+        for index, predict in enumerate(predicted):
+            query = predict[0]
+            predicted_ids = predict[1:]
+            actual_ids = actual[index]
+            p_at_ks = []
+            for i, predicted_id in enumerate(predicted_ids):
+                if predicted_id in actual_ids:
+                    p_at_ks.append(self.calculate_precision(actual, predicted[:i]))
+            average_AP = 0.0
+            if len(p_at_ks) > 0:
+                average_AP = sum(p_at_ks) / len(p_at_ks)
+            AP.append(average_AP)
         return AP
 
     def calculate_MAP(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
@@ -137,10 +148,11 @@ class Evaluation:
         float
             The Mean Average Precision of the predicted results
         """
-        MAP = 0.0
-
         # TODO: Calculate MAP here
-
+        AP = self.calculate_AP(actual, predicted)
+        MAP = 0.0
+        if len(AP) > 0:
+            MAP = sum(AP) / len(AP)
         return MAP
 
     def cacluate_DCG(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
