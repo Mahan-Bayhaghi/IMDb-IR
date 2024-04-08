@@ -181,12 +181,14 @@ class Evaluation:
             predicted_rels = [p[1] for p in predicted_movies]
             actual_ids = [a[0] for a in actual[index]]
             actual_rels = [a[1] for a in actual[index]]
+            query_DCG = []
             for i, predicted_id in enumerate(predicted_ids):
                 if predicted_id in actual_ids:
                     DG = actual_rels[actual_ids.index(predicted_ids)] / np.log(i)
-                    DCG.append(DG)
-        for i in range(1, len(DCG)):
-            DCG[i] += DCG[i - 1]
+                    query_DCG.append(DG)
+            for i in range(1, len(query_DCG)):
+                query_DCG[i] += query_DCG[i - 1]
+            DCG.append(query_DCG)
         return DCG
 
     def calculate_NDCG(self, actual: List[List[(str, int)]], predicted: List[List[(str, int)]]) -> list[list[float]]:
@@ -356,3 +358,11 @@ class Evaluation:
         # call print and viualize functions
         self.print_evaluation(precision, recall, f1, ap, map_score, dcg, ndcg, rr, mrr)
         self.log_evaluation(precision, recall, f1, ap, map_score, dcg, ndcg, rr, mrr)
+
+
+def main():
+    print("main")
+
+
+if __name__ == "__main__":
+    main()
