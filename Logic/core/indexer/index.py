@@ -172,6 +172,8 @@ class Index:
                 summaries = document['summaries']
                 if document['first_page_summary'] is not None:
                     summaries.append(document['first_page_summary'])
+                if document['title'] is not None:
+                    summaries.append(document['title'])
                 for summary in summaries:
                     # split into tokens
                     tokens = summary.split()
