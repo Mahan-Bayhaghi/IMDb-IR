@@ -12,7 +12,7 @@ class Evaluation:
     def __init__(self, name: str):
         self.name = name
 
-    def calculate_precision(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
+    def calculate_precision(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
         Calculates the precision of the predicted results
 
@@ -25,7 +25,7 @@ class Evaluation:
 
         Returns
         -------
-        float
+        list[float]
             The precision of the predicted results
         """
         # TODO: Calculate precision here
@@ -35,14 +35,13 @@ class Evaluation:
             query = predict[0]
             predicted_ids = predict[1:]
             intersec = set(predicted_ids).intersection(set(actual[index][1:]))
-            predict_precision = len(intersec) / len(predicted_ids)
+            predict_precision = 0.0
+            if len(predicted_ids) > 0:
+                predict_precision = len(intersec) / len(predicted_ids)
             predict_precisions.append(predict_precision)
-        precision = 0.0
-        if len(predict_precisions) != 0:
-            precision = sum(predict_precisions) / len(predict_precisions)
-        return precision
+        return predict_precisions
 
-    def calculate_recall(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
+    def calculate_recall(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
         Calculates the recall of the predicted results
 
@@ -55,7 +54,7 @@ class Evaluation:
 
         Returns
         -------
-        float
+        list[float]
             The recall of the predicted results
         """
         # TODO: Calculate recall here
@@ -65,14 +64,13 @@ class Evaluation:
             query = predict[0]
             predicted_ids = predict[1:]
             intersec = set(predicted_ids).intersection(set(actual[index][1:]))
-            predict_recall = len(intersec) / len(actual[index][1:])
+            predict_recall = 0.0
+            if len(predicted_ids) > 0:
+                predict_recall = len(intersec) / len(actual[index][1:])
             predict_recalls.append(predict_recall)
-        recall = 0.0
-        if len(predict_recalls) != 0:
-            recall = sum(predict_recalls) / len(predict_recalls)
-        return recall
+        return predict_recalls
 
-    def calculate_F1(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
+    def calculate_F1(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
         Calculates the F1 score of the predicted results
 
@@ -85,22 +83,19 @@ class Evaluation:
 
         Returns
         -------
-        float
+        float[float]
             The F1 score of the predicted results
         """
         # TODO: Calculate F1 here
         predict_f1s = []
+        recall = self.calculate_recall(actual, predicted)
+        precision = self.calculate_precision(actual, predicted)
         for index in range(len(predicted)):
-            recall = self.calculate_recall(actual, predicted)
-            precision = self.calculate_precision(actual, predicted)
             predict_f1 = 0.0
-            if (precision + recall) > 0:
-                predict_f1 = (2 * recall * precision) / (recall + precision)
+            if (precision[index]*recall[index]) > 0.0001:
+                predict_f1 = (2 * recall[index] * precision[index]) / (recall[index] + precision[index])
             predict_f1s.append(predict_f1)
-        f1 = 0.0
-        if len(predict_f1s) > 0:
-            f1 = sum(predict_f1s) / len(predict_f1s)
-        return f1
+        return predict_f1s
 
     def calculate_AP(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
@@ -120,15 +115,17 @@ class Evaluation:
         """
         AP = []
 
+        # print("predicted is ", predicted)
         # TODO: Calculate AP here
         for index, predict in enumerate(predicted):
             query = predict[0]
             predicted_ids = predict[1:]
-            actual_ids = actual[index]
+            actual_ids = actual[index][1:]
             p_at_ks = []
-            for i, predicted_id in enumerate(predicted_ids):
-                if predicted_id in actual_ids:
-                    p_at_ks.append(self.calculate_precision(actual, predicted[:i]))
+            for idx in range(len(predicted_ids)):
+                if predicted_ids[idx] in actual_ids:
+                    shit = self.calculate_precision([actual[index]], [predict[1:][:idx+1]])[0]
+                    p_at_ks.append(shit)
             average_AP = 0.0
             if len(p_at_ks) > 0:
                 average_AP = sum(p_at_ks) / len(p_at_ks)
@@ -186,12 +183,12 @@ class Evaluation:
             actual_rels = [a[1] for a in actual[index][1:]]
             query_DCG = []
             for i, predicted_id in enumerate(predicted_ids):
-                if i == 0:
-                    if predicted_id in actual_ids:
+                if predicted_id in actual_ids:
+                    if i == 0:
                         query_DCG.append(actual_rels[actual_ids.index(predicted_id)])
-                elif predicted_id in actual_ids:
-                    DG = actual_rels[actual_ids.index(predicted_id)] / np.log2(i)
-                    query_DCG.append(DG)
+                    else:
+                        DG = actual_rels[actual_ids.index(predicted_id)] / np.log2(i)
+                        query_DCG.append(DG)
             for i in range(1, len(query_DCG)):
                 query_DCG[i] += query_DCG[i - 1]
             DCG.append(query_DCG)
@@ -236,8 +233,7 @@ class Evaluation:
                         ideal_DCG_ids.append(predicted_id)
             ideal_DCG_rels = [actual_rels[actual_ids.index(ideal_DCG_id)] for ideal_DCG_id in ideal_DCG_ids]
             ideal_DCG_rels.sort(reverse=True)
-            ideal_CG = [ideal_DCG_rels[0]] + [(ideal_DCG_rels[idx] / np.log(idx+1)) for idx in range(1, len(ideal_DCG_rels))]
-
+            ideal_CG = [ideal_DCG_rels[0]] + [(ideal_DCG_rels[idx] / np.log2(idx+1)) for idx in range(1, len(ideal_DCG_rels))]
             for i in range(1, len(query_DCG)):
                 ideal_CG[i] += ideal_CG[i - 1]
                 query_DCG[i] += query_DCG[i - 1]
@@ -458,7 +454,7 @@ if __name__ == "__main__":
                        ('tt0316654', 9.11635489253859), ('tt6320628', 8.71744313614053),
                        ('tt0413300', 7.483820844565398), ('tt0145487', 7.199364442221147)]
     predicted_1 = [[q[0] for q in query_predict_1]]
-    query_predict_2 = [("spiderman", 0), ('tt16360004', 12.759454761359082), ('tt13904644', 10.944147360880505),
+    query_predict_2 = [("cholops", 0), ('tt16360004', 12.759454761359082), ('tt13904644', 10.944147360880505),
                        ('tt1872181', 10.908264454821978), ('tt4633694', 10.013595766313964),
                        ('tt2250912', 9.95070121054384), ('tt10872600', 9.497616884933521),
                        ('tt0316654', 9.11635489253859), ('tt6320628', 8.71744313614053),
@@ -470,7 +466,7 @@ if __name__ == "__main__":
                       ("tt2250912", 16), ("tt6320628", 15), ("tt9362722", 14), ("tt0316654", 13), ("tt0076975", 12),
                       ("tt16360004", 11), ("tt6135682", 10)]
     actual_1 = [[a[0] for a in query_actual_1]]
-    query_actual_2 = [("spiderman", 20), ("tt0145487", 19), ("tt10872600", 19), ("tt0948470", 19), ("tt1872181", 18),
+    query_actual_2 = [("cholops", 20), ("tt0145487", 19), ("tt10872600", 19), ("tt0948470", 19), ("tt1872181", 18),
                       ("tt2705436", 15), ("tt0112175", 15), ("tt12122034", 15), ("tt0413300", 15), ("tt4633694", 14),
                       ("tt2250912", 14), ("tt6320628", 14), ("tt9362722", 14), ("tt0316654", 14), ("tt0076975", 14),
                       ("tt16360004", 13), ("tt6135682", 10)]
