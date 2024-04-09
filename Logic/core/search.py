@@ -213,8 +213,10 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # query = "spider man in wonderland"
-    # query = "spiderman andrew"
-    query = "spiderman"
+    # query = "spiderman"
+    query = "matrix"
+    query = "the dune atreides "
+    query = "harry potter"
 
     # method = "lnc.ltc"
     method = "OkapiBM25"
