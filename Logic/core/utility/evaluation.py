@@ -457,20 +457,36 @@ if __name__ == "__main__":
                        ('tt2250912', 9.95070121054384), ('tt10872600', 9.497616884933521),
                        ('tt0316654', 9.11635489253859), ('tt6320628', 8.71744313614053),
                        ('tt0413300', 7.483820844565398), ('tt0145487', 7.199364442221147)]
-    predicted = [[q[0] for q in query_predict_1]]
-    actual_1 = [("spiderman", 26), ("tt0145487", 25), ("tt10872600", 24), ("tt0948470", 23), ("tt1872181", 22),
-                ("tt2705436", 21), ("tt0112175", 20), ("tt12122034", 19), ("tt0413300", 18), ("tt4633694", 17),
-                ("tt2250912", 16), ("tt6320628", 15), ("tt9362722", 14), ("tt0316654", 13), ("tt0076975", 12),
-                ("tt16360004", 11), ("tt6135682", 10)]
-    actual = [[a[0] for a in actual_1]]
-    print(predicted)
-    print(actual)
-    print(f" precision  \t: {evaluation.calculate_precision(actual, predicted)}")
-    print(f" recall     \t: {evaluation.calculate_recall(actual, predicted)}")
-    print(f" f1 measure \t: {evaluation.calculate_F1(actual, predicted)}")
-    print(f" AP measure \t:{evaluation.calculate_AP(actual, predicted)}")
-    print(f" MAP measure\t: {evaluation.calculate_MAP(actual, predicted)}")
-    print(f" RR measure \t:{evaluation.calculate_RR(actual, predicted)}")
-    print(f" MRR measure\t: {evaluation.calculate_MRR(actual, predicted)}")
-    print(f" DCG measure \t:{evaluation.calculate_DCG([actual_1], [query_predict_1])}")
-    print(f" NDCG measure \t:{evaluation.calculate_NDCG([actual_1], [query_predict_1])}")
+    predicted_1 = [[q[0] for q in query_predict_1]]
+    query_predict_2 = [("spiderman", 0), ('tt16360004', 12.759454761359082), ('tt13904644', 10.944147360880505),
+                       ('tt1872181', 10.908264454821978), ('tt4633694', 10.013595766313964),
+                       ('tt2250912', 9.95070121054384), ('tt10872600', 9.497616884933521),
+                       ('tt0316654', 9.11635489253859), ('tt6320628', 8.71744313614053),
+                       ('tt0413300', 7.483820844565398), ('tt0145487', 7.199364442221147)]
+    predicted_2 = [[q[0] for q in query_predict_2]]
+
+    query_actual_1 = [("spiderman", 26), ("tt0145487", 25), ("tt10872600", 24), ("tt0948470", 23), ("tt1872181", 22),
+                      ("tt2705436", 21), ("tt0112175", 20), ("tt12122034", 19), ("tt0413300", 18), ("tt4633694", 17),
+                      ("tt2250912", 16), ("tt6320628", 15), ("tt9362722", 14), ("tt0316654", 13), ("tt0076975", 12),
+                      ("tt16360004", 11), ("tt6135682", 10)]
+    actual_1 = [[a[0] for a in query_actual_1]]
+    query_actual_2 = [("spiderman", 20), ("tt0145487", 19), ("tt10872600", 19), ("tt0948470", 19), ("tt1872181", 18),
+                      ("tt2705436", 15), ("tt0112175", 15), ("tt12122034", 15), ("tt0413300", 15), ("tt4633694", 14),
+                      ("tt2250912", 14), ("tt6320628", 14), ("tt9362722", 14), ("tt0316654", 14), ("tt0076975", 14),
+                      ("tt16360004", 13), ("tt6135682", 10)]
+    actual_2 = [[a[0] for a in query_actual_2]]
+
+    total_actual = actual_1+actual_2
+    total_predict = predicted_1+predicted_2
+    query_total_actual = [query_actual_1 ,query_actual_2]
+    query_total_predict = [query_predict_1 ,query_predict_2]
+
+    print(f" precision  \t: {evaluation.calculate_precision(total_actual, total_predict)}")
+    print(f" recall     \t: {evaluation.calculate_recall(total_actual, total_predict)}")
+    print(f" f1 measure \t: {evaluation.calculate_F1(total_actual, total_predict)}")
+    print(f" AP measure \t:{evaluation.calculate_AP(total_actual, total_predict)}")
+    print(f" MAP measure\t: {evaluation.calculate_MAP(total_actual, total_predict)}")
+    print(f" RR measure \t:{evaluation.calculate_RR(total_actual, total_predict)}")
+    print(f" MRR measure\t: {evaluation.calculate_MRR(total_actual, total_predict)}")
+    print(f" DCG measure \t:{evaluation.calculate_DCG(query_total_actual, query_total_predict)}")
+    print(f" NDCG measure \t:{evaluation.calculate_NDCG(query_total_actual, query_total_predict)}")
