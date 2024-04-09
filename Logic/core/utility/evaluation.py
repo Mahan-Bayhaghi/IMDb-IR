@@ -526,19 +526,6 @@ if __name__ == "__main__":
         total_predict.append([a[0] for a in query_total_predict[i]])
     print(f"total predict is : {total_predict}")
 
-
-    # query_actual_1 = [("spiderman", 26), ("tt0145487", 25), ("tt10872600", 24), ("tt0948470", 23), ("tt1872181", 22),
-    #                   ("tt2705436", 21), ("tt0112175", 20), ("tt12122034", 19), ("tt0413300", 18), ("tt4633694", 17),
-    #                   ("tt2250912", 16), ("tt6320628", 15), ("tt9362722", 14), ("tt0316654", 13), ("tt0076975", 12)]
-    # actual_1 = [[a[0] for a in query_actual_1]]
-    # # top 15 search results from https://www.imdb.com/find/?q=batman&ref_=nv_sr_sm
-    # # relevance scores are my prediction of relevance and they may not be correct !
-    # query_actual_2 = [("batman", 0), ("tt1877830", 19), ("tt0059968", 18), ("tt0372784", 17),
-    #                   ("tt0103359", 16), ("tt0118688", 15), ("tt0103776", 14), ("tt0112462", 13),
-    #                   ("tt2975590", 12), ("tt19850008", 11), ("tt0147746", 10), ("tt0398417", 9),
-    #                   ("tt0035665", 8), ("tt4116284", 7), ("tt0060153", 6)]
-    # actual_2 = [[a[0] for a in query_actual_2]]
-
     precision = evaluation.calculate_precision(total_actual, total_predict)
     recall = evaluation.calculate_recall(total_actual, total_predict)
     f1 = evaluation.calculate_F1(total_actual, total_predict)
@@ -551,3 +538,53 @@ if __name__ == "__main__":
     queries = [query_predict[0][0] for query_predict in query_total_predict]
     evaluation.print_evaluation(precision, recall, f1, AP, MAP, DCG, NDCG, RR, MRR, queries)
     # evaluation.log_evaluation(precision, recall, f1, AP, MAP, DCG, NDCG, RR, MRR)
+
+# ****************************************************************************************************
+#  MAP measure over 5 queries 	: 0.691939027462837
+#  MRR measure over 5 queries 	: 0.8666666666666666
+# ****************************************************************************************************
+#  Evaluation over query <spiderman>
+#  precision  	: 0.9
+#  recall     	: 0.6
+#  f1 measure 	: 0.7200000000000001
+#  AP measure 	: 0.6856701940035274
+#  RR measure 	: 1.0
+#  DCG measure 	: [6, 23.0, 30.57115704285749, 36.07115704285749, 44.25401164625196, 47.348834104128294, 50.910905975208514, 55.24423930854185, 61.55353684425643]
+#  NDCG measure 	: [0.3, 0.5897435897435898, 0.6147946030121467, 0.6415409529974851, 0.7208207001130376, 0.72123891981617, 0.7355857951683191, 0.7685829537354308, 0.8343885270939436]
+# ----------------------------------------------------------------------------------------------------
+#  Evaluation over query <batman>
+#  precision  	: 0.5
+#  recall     	: 0.35714285714285715
+#  f1 measure 	: 0.41666666666666663
+#  AP measure 	: 0.5961904761904762
+#  RR measure 	: 0.3333333333333333
+#  DCG measure 	: [14.0, 20.5, 28.682854603394468, 35.25935232638167, 40.602460133002005]
+#  NDCG measure 	: [0.7368421052631579, 0.5694444444444444, 0.6308923209585308, 0.67206824515946, 0.6992859627903656]
+# ----------------------------------------------------------------------------------------------------
+#  Evaluation over query <matrix>
+#  precision  	: 0.6
+#  recall     	: 0.42857142857142855
+#  f1 measure 	: 0.5
+#  AP measure 	: 0.7305555555555555
+#  RR measure 	: 1.0
+#  DCG measure 	: [11, inf, inf, inf, inf, inf]
+#  NDCG measure 	: [0.5789473684210527, inf, inf, inf, inf, inf]
+# ----------------------------------------------------------------------------------------------------
+#  Evaluation over query <dune>
+#  precision  	: 0.3
+#  recall     	: 0.2
+#  f1 measure 	: 0.24
+#  AP measure 	: 0.6666666666666666
+#  RR measure 	: 1.0
+#  DCG measure 	: [12, inf, inf]
+#  NDCG measure 	: [0.9230769230769231, inf, inf]
+# ----------------------------------------------------------------------------------------------------
+#  Evaluation over query <harry potter>
+#  precision  	: 0.7
+#  recall     	: 0.4666666666666667
+#  f1 measure 	: 0.56
+#  AP measure 	: 0.7806122448979592
+#  RR measure 	: 1.0
+#  DCG measure 	: [13, inf, inf, inf, inf, inf, inf]
+#  NDCG measure 	: [0.8666666666666667, inf, inf, inf, inf, inf, inf]
+# ----------------------------------------------------------------------------------------------------
