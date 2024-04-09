@@ -1,5 +1,6 @@
 from typing import List
 import numpy as np
+import wandb
 
 
 # *** NOTE ***
@@ -33,7 +34,8 @@ class Evaluation:
             predict = predicted[index]
             query = predict[0]
             predicted_ids = predict[1:]
-            predict_precision = len([set(predicted_ids).intersection(set(actual[index]))]) / len(predicted_ids)
+            intersec = set(predicted_ids).intersection(set(actual[index][1:]))
+            predict_precision = len(intersec) / len(predicted_ids)
             predict_precisions.append(predict_precision)
         precision = 0.0
         if len(predict_precisions) != 0:
@@ -62,7 +64,8 @@ class Evaluation:
             predict = predicted[index]
             query = predict[0]
             predicted_ids = predict[1:]
-            predict_recall = len([set(predicted_ids).intersection(set(actual[index]))]) / len(actual[index])
+            intersec = set(predicted_ids).intersection(set(actual[index][1:]))
+            predict_recall = len(intersec) / len(actual[index][1:])
             predict_recalls.append(predict_recall)
         recall = 0.0
         if len(predict_recalls) != 0:
@@ -155,7 +158,7 @@ class Evaluation:
             MAP = sum(AP) / len(AP)
         return MAP
 
-    def calculate_DCG(self, actual: List[List[(str, int)]], predicted: List[List[(str, int)]]) -> list[list[float]]:
+    def calculate_DCG(self, actual: list[list[(str, int)]], predicted: list[list[(str, int)]]) -> list[list[float]]:
         """
         Calculates the Discounted Cumulative Gain (DCG) of the predicted results
 
@@ -179,19 +182,22 @@ class Evaluation:
             predicted_movies = predict[1:]
             predicted_ids = [p[0] for p in predicted_movies]
             predicted_rels = [p[1] for p in predicted_movies]
-            actual_ids = [a[0] for a in actual[index]]
-            actual_rels = [a[1] for a in actual[index]]
+            actual_ids = [a[0] for a in actual[index][1:]]
+            actual_rels = [a[1] for a in actual[index][1:]]
             query_DCG = []
             for i, predicted_id in enumerate(predicted_ids):
-                if predicted_id in actual_ids:
-                    DG = actual_rels[actual_ids.index(predicted_ids)] / np.log(i)
+                if i == 0:
+                    if predicted_id in actual_ids:
+                        query_DCG.append(actual_rels[actual_ids.index(predicted_id)])
+                elif predicted_id in actual_ids:
+                    DG = actual_rels[actual_ids.index(predicted_id)] / np.log2(i)
                     query_DCG.append(DG)
             for i in range(1, len(query_DCG)):
                 query_DCG[i] += query_DCG[i - 1]
             DCG.append(query_DCG)
         return DCG
 
-    def calculate_NDCG(self, actual: List[List[(str, int)]], predicted: List[List[(str, int)]]) -> list[list[float]]:
+    def calculate_NDCG(self, actual: list[list[(str, int)]], predicted: list[list[(str, int)]]) -> list[list[float]]:
         """
         Calculates the Normalized Discounted Cumulative Gain (NDCG) of the predicted results
 
@@ -213,12 +219,23 @@ class Evaluation:
         # TODO: Calculate NDCG here
         DCG = self.calculate_DCG(actual, predicted)
 
-        # sort each actual DCG list to ideal ranking
-        actual.sort(key=lambda x: x[1], reverse=True)
+        ideal_rankings = []
+        for actual_ranking in actual:
+            tmp = actual_ranking[1:].copy()
+            tmp.sort(key=lambda x: x[1], reverse=True)
+            ideal_rankings.append(tmp)
+
+        ideal_DCGs = []
+        for ranking in ideal_rankings:
+            ranking_DCG = [ranking[0][1]] + [(ranking[idx][1] / np.log2(idx+1)) for idx in range(1, len(ranking))]
+            for i in range(1, len(ranking_DCG)):
+                ranking_DCG[i] += ranking_DCG[i - 1]
+            ideal_DCGs.append(ranking_DCG)
+
         for index, DCG_list in enumerate(DCG):
             NDCG_list = []
             for i in range(len(DCG_list)):
-                NDCG_list.append(DCG_list[i] / actual[index][i][1])
+                NDCG_list.append(DCG_list[i] / ideal_DCGs[index][i])
             NDCG.append(NDCG_list)
 
         return NDCG
@@ -244,10 +261,11 @@ class Evaluation:
         for index, predict in enumerate(predicted):
             query = predict[0]
             predicted_ids = predict[1:]
-            actual_ids = actual[index]
+            actual_ids = actual[index][1:]
             for i, predicted_id in enumerate(predicted_ids):
                 if predicted_id in actual_ids:
                     RR.append(1 / (i + 1))
+                    break
         return RR
 
     def calculate_MRR(self, actual: List[List[str]], predicted: List[List[str]]) -> float:
@@ -303,7 +321,8 @@ class Evaluation:
 
         # TODO: Print the evaluation metrics
 
-    def log_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
+    # def log_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
+    def log_evaluation(self):
         """
         Use Wandb to log the evaluation metrics
 
@@ -331,6 +350,9 @@ class Evaluation:
         """
 
         # TODO: Log the evaluation metrics using Wandb
+        # wandb.login()
+        # wandb.init()
+        # wandb.log({"acc": 0.5, "vel": 1.8})
 
     def calculate_evaluation(self, actual: List[List[str]], predicted: List[List[str]]):
         """
@@ -360,9 +382,41 @@ class Evaluation:
         self.log_evaluation(precision, recall, f1, ap, map_score, dcg, ndcg, rr, mrr)
 
 
-def main():
-    print("main")
+# ------------ all searches done by Okapi25 with all weights set to 1 ------------
+# test query 1 :
+#
+# predicted = [("spiderman", 0), ('tt16360004', 12.759454761359082), ('tt13904644', 10.944147360880505),
+# ('tt1872181', 10.908264454821978), ('tt4633694', 10.013595766313964), ('tt2250912', 9.95070121054384),
+# ('tt10872600', 9.497616884933521), ('tt0316654', 9.11635489253859), ('tt6320628', 8.71744313614053), ('tt0413300',
+# 7.483820844565398), ('tt0145487', 7.199364442221147)]
+#
+# actual = [(("spiderman", 0), ("tt0145487", ?), ("tt10872600", ?), ("tt0948470", ?), ("tt1872181", ?), ("tt2705436",
+# ?), ("tt0112175", ?), ("tt12122034", ?), ("tt0413300", ?), ("tt4633694", ?), ("tt2250912", ?), ("tt6320628", ?),
+# ("tt9362722", ?), ("tt0316654", ?), ("tt0076975", ?), ("tt16360004", ?), ("tt6135682", ?)]
 
 
 if __name__ == "__main__":
-    main()
+    print("main")
+    evaluation = Evaluation("my evaluation")
+    query_predict_1 = [("spiderman", 0), ('tt16360004', 12.759454761359082), ('tt13904644', 10.944147360880505),
+                       ('tt1872181', 10.908264454821978), ('tt4633694', 10.013595766313964),
+                       ('tt2250912', 9.95070121054384), ('tt10872600', 9.497616884933521),
+                       ('tt0316654', 9.11635489253859), ('tt6320628', 8.71744313614053),
+                       ('tt0413300', 7.483820844565398), ('tt0145487', 7.199364442221147)]
+    predicted = [[q[0] for q in query_predict_1]]
+    actual_1 = [("spiderman", 26), ("tt0145487", 25), ("tt10872600", 24), ("tt0948470", 23), ("tt1872181", 22),
+                ("tt2705436", 21), ("tt0112175", 20), ("tt12122034", 19), ("tt0413300", 18), ("tt4633694", 17),
+                ("tt2250912", 16), ("tt6320628", 15), ("tt9362722", 14), ("tt0316654", 13), ("tt0076975", 12),
+                ("tt16360004", 11), ("tt6135682", 10)]
+    actual = [[a[0] for a in actual_1]]
+    print(predicted)
+    print(actual)
+    print(f" precision  \t: {evaluation.calculate_precision(actual, predicted)}")
+    print(f" recall     \t: {evaluation.calculate_recall(actual, predicted)}")
+    print(f" f1 measure \t: {evaluation.calculate_F1(actual, predicted)}")
+    print(f" AP measure \t:{evaluation.calculate_AP(actual, predicted)}")
+    print(f" MAP measure\t: {evaluation.calculate_MAP(actual, predicted)}")
+    print(f" RR measure \t:{evaluation.calculate_RR(actual, predicted)}")
+    print(f" MRR measure\t: {evaluation.calculate_MRR(actual, predicted)}")
+    print(f" DCG measure \t:{evaluation.calculate_DCG([actual_1], [query_predict_1])}")
+    print(f" NDCG measure \t:{evaluation.calculate_NDCG([actual_1], [query_predict_1])}")

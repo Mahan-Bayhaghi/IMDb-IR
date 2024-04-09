@@ -213,18 +213,20 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # query = "spider man in wonderland"
-    query = "spiderman andrew"
+    # query = "spiderman andrew"
+    query = "spiderman"
 
     # method = "lnc.ltc"
     method = "OkapiBM25"
 
     weights = {
         Indexes.STARS: 1,
-        Indexes.GENRES: 0.5,
-        Indexes.SUMMARIES: 2
+        Indexes.GENRES: 1,
+        Indexes.SUMMARIES: 1
     }
 
     result = search_engine.search(query, method, weights, safe_ranking=True, max_results=10)
     # result = search_engine.search(query, method, weights, safe_ranking=False, max_results=20)
 
     print(f"final search result is \n {result}")
+
