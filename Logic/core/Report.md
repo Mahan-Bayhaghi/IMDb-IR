@@ -19,7 +19,13 @@ such as `scorer.py` and also `search.py`. We first implemented
 the required evaluation methods. We have assumed a sample of queries
 with their actual relevance score are available from IMDb website and
 used our search engine result of searching the same query using 
-`okapi25` method by standard weights. Then, we logged it using `wandb` module.
+`okapi25` method by standard weights.
+The data we used are 15 first results of queries `spiderman`, `batman`, 
+`matrix`, `harry potter` and `dune`. Part of this test data 
+has been gathered by my beloved friend **_Sina Namazi_**. 
+We shared our test data, thus you may see the very same data
+in his code as well. 
+Then, we logged it using `wandb` module.
 The result could be done again by running class or simply looking
 at the comment in the very end of file. By using 5 queries we managed 
 to reach `MAP = 0.70` and `MRR = 0.86`.

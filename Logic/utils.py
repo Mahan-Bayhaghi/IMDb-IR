@@ -1,17 +1,17 @@
+import json
 from typing import Dict, List
+
+from Logic.core import path_access
+from Logic.core.indexer.indexes_enum import Indexes
 from Logic.core.search import SearchEngine
 from Logic.core.spell_correction import SpellCorrection
-from Logic.core.snippet import Snippet
-from Logic.core.indexer.indexes_enum import Indexes, Index_types
-from Logic.core.indexer.index_reader import Index_reader
-import json
 
 movies_dataset = None  # TODO
 search_engine = SearchEngine()
 
 
 def import_dataset():
-    with open("D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/IMDB_crawled.json", 'r') as file:
+    with open(path_access.path_to_logic() + "IMDB_crawled.json", 'r') as file:
         data = json.load(file)
     return data
 

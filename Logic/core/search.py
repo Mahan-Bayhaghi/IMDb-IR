@@ -1,11 +1,13 @@
 import collections
 import json
 import numpy as np
+
+from Logic.core import path_access
 from Logic.core.preprocess import Preprocessor
 from Logic.core.scorer import Scorer
 from Logic.core.indexer.indexes_enum import Indexes, Index_types
 from Logic.core.indexer.index_reader import Index_reader
-
+import Logic.core.path_access
 
 class SearchEngine:
     def __init__(self):
@@ -14,7 +16,7 @@ class SearchEngine:
 
         """
         # path = './saved_indexes/'
-        path = 'D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/indexer/saved_indexes/'
+        path = path_access.path_to_logic() + 'core/indexer/saved_indexes/'
         self.document_indexes = {
             Indexes.STARS: Index_reader(path, Indexes.STARS),
             Indexes.GENRES: Index_reader(path, Indexes.GENRES),

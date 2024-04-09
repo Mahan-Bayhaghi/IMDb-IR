@@ -3,6 +3,7 @@ import math
 
 import numpy as np
 
+from Logic.core import path_access
 from Logic.core.indexer import index_reader, indexes_enum
 
 
@@ -265,7 +266,7 @@ class Scorer:
 def main():
     query = "spider man in wonderland"
     method = "lnc.ltn"
-    path = "D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/indexer/saved_indexes/"
+    path = path_access.path_to_logic()+"core/indexer/saved_indexes/"
     reader = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES)
     query = "meet success"
     query_as_list = query.split()
