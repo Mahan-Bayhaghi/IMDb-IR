@@ -1,9 +1,15 @@
 # IMDb-IR project (phase 1) Report
 ____________
-### Mahan Bayhaghi
+## Mahan Bayhaghi
 #### std number :  `400104834`
 ____________
-
+The crawled data file and indexes are much larger than what 
+GIT usually allows. Thush I have uploaded all my crawled data, indexes
+and preprocessed data to google drive. You can access it by using
+this <a href="https://drive.google.com/drive/folders/1Raj_xqFuPyxfpJsQsrocevtRJrDgzsFl?usp=sharing" target="_blank">Link</a>
+____________
+#### If you want to run the classes, please don't forget to add project absolute path on your machine to [path_access.py](./path_access.py)
+____________
 This phase includes following modules that need to be tested :
 
 ## 1. [Near-duplicate page detecion](./LSH.py)
