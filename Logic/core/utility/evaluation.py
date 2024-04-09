@@ -92,7 +92,7 @@ class Evaluation:
         precision = self.calculate_precision(actual, predicted)
         for index in range(len(predicted)):
             predict_f1 = 0.0
-            if (precision[index]*recall[index]) > 0.0001:
+            if (precision[index] * recall[index]) > 0.0001:
                 predict_f1 = (2 * recall[index] * precision[index]) / (recall[index] + precision[index])
             predict_f1s.append(predict_f1)
         return predict_f1s
@@ -124,7 +124,7 @@ class Evaluation:
             p_at_ks = []
             for idx in range(len(predicted_ids)):
                 if predicted_ids[idx] in actual_ids:
-                    shit = self.calculate_precision([actual[index]], [predict[1:][:idx+1]])[0]
+                    shit = self.calculate_precision([actual[index]], [predict[1:][:idx + 1]])[0]
                     p_at_ks.append(shit)
             average_AP = 0.0
             if len(p_at_ks) > 0:
@@ -233,7 +233,8 @@ class Evaluation:
                         ideal_DCG_ids.append(predicted_id)
             ideal_DCG_rels = [actual_rels[actual_ids.index(ideal_DCG_id)] for ideal_DCG_id in ideal_DCG_ids]
             ideal_DCG_rels.sort(reverse=True)
-            ideal_CG = [ideal_DCG_rels[0]] + [(ideal_DCG_rels[idx] / np.log2(idx+1)) for idx in range(1, len(ideal_DCG_rels))]
+            ideal_CG = [ideal_DCG_rels[0]] + [(ideal_DCG_rels[idx] / np.log2(idx + 1)) for idx in
+                                              range(1, len(ideal_DCG_rels))]
             for i in range(1, len(query_DCG)):
                 ideal_CG[i] += ideal_CG[i - 1]
                 query_DCG[i] += query_DCG[i - 1]
@@ -341,35 +342,48 @@ class Evaluation:
             MRR = sum(RR) / len(RR)
         return MRR
 
-    def print_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
+    def print_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr, queries):
         """
         Prints the evaluation metrics
 
         parameters
         ----------
-        precision : float
+        precision : list[float]
             The precision of the predicted results
-        recall : float
+        recall : list[float]
             The recall of the predicted results
-        f1 : float
+        f1 : list[float]
             The F1 score of the predicted results
-        ap : float
+        ap : list[float]
             The Average Precision of the predicted results
         map : float
             The Mean Average Precision of the predicted results
-        dcg: float
+        dcg: list[list[float]]
             The Discounted Cumulative Gain of the predicted results
-        ndcg : float
+        ndcg : list[list[float]]
             The Normalized Discounted Cumulative Gain of the predicted results
-        rr: float
+        rr: list[float]
             The Reciprocal Rank of the predicted results
         mrr : float
             The Mean Reciprocal Rank of the predicted results
 
         """
         print(f"name = {self.name}")
-
         # TODO: Print the evaluation metrics
+        num_queries = len(queries)
+        print("----" * 20)
+        print(f" MAP measure over {num_queries} queries \t: {MAP} ")
+        print(f" MRR measure over {num_queries} queries \t: {MRR} ")
+        for idx in range(num_queries):
+            print(f" Evaluation over query {queries[idx]}")
+            print(f" precision  \t: {precision[idx]}")
+            print(f" recall     \t: {recall[idx]}")
+            print(f" f1 measure \t: {f1[idx]}")
+            print(f" AP measure \t: {AP[idx]}")
+            print(f" RR measure \t: {RR[idx]}")
+            print(f" DCG measure \t: {DCG[idx]}")
+            print(f" NDCG measure \t: {NDCG[idx]}")
+            print("----" * 25)
 
     # def log_evaluation(self, precision, recall, f1, ap, map, dcg, ndcg, rr, mrr):
     def log_evaluation(self):
@@ -446,8 +460,7 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    print("main")
-    evaluation = Evaluation("my evaluation")
+    evaluation = Evaluation("my query evaluation over 2 queries")
     query_predict_1 = [("spiderman", 0), ('tt16360004', 12.759454761359082), ('tt13904644', 10.944147360880505),
                        ('tt1872181', 10.908264454821978), ('tt4633694', 10.013595766313964),
                        ('tt2250912', 9.95070121054384), ('tt10872600', 9.497616884933521),
@@ -472,17 +485,19 @@ if __name__ == "__main__":
                       ("tt16360004", 13), ("tt6135682", 10)]
     actual_2 = [[a[0] for a in query_actual_2]]
 
-    total_actual = actual_1+actual_2
-    total_predict = predicted_1+predicted_2
-    query_total_actual = [query_actual_1 ,query_actual_2]
-    query_total_predict = [query_predict_1 ,query_predict_2]
+    total_actual = actual_1 + actual_2
+    total_predict = predicted_1 + predicted_2
+    query_total_actual = [query_actual_1, query_actual_2]
+    query_total_predict = [query_predict_1, query_predict_2]
 
-    print(f" precision  \t: {evaluation.calculate_precision(total_actual, total_predict)}")
-    print(f" recall     \t: {evaluation.calculate_recall(total_actual, total_predict)}")
-    print(f" f1 measure \t: {evaluation.calculate_F1(total_actual, total_predict)}")
-    print(f" AP measure \t:{evaluation.calculate_AP(total_actual, total_predict)}")
-    print(f" MAP measure\t: {evaluation.calculate_MAP(total_actual, total_predict)}")
-    print(f" RR measure \t:{evaluation.calculate_RR(total_actual, total_predict)}")
-    print(f" MRR measure\t: {evaluation.calculate_MRR(total_actual, total_predict)}")
-    print(f" DCG measure \t:{evaluation.calculate_DCG(query_total_actual, query_total_predict)}")
-    print(f" NDCG measure \t:{evaluation.calculate_NDCG(query_total_actual, query_total_predict)}")
+    precision = evaluation.calculate_precision(total_actual, total_predict)
+    recall = evaluation.calculate_recall(total_actual, total_predict)
+    f1 = evaluation.calculate_F1(total_actual, total_predict)
+    AP = evaluation.calculate_AP(total_actual, total_predict)
+    MAP = evaluation.calculate_MAP(total_actual, total_predict)
+    RR = evaluation.calculate_RR(total_actual, total_predict)
+    MRR = evaluation.calculate_MRR(total_actual, total_predict)
+    DCG = evaluation.calculate_DCG(query_total_actual, query_total_predict)
+    NDCG = evaluation.calculate_NDCG(query_total_actual, query_total_predict)
+
+    evaluation.print_evaluation(precision, recall, f1, AP, MAP, DCG, NDCG, RR, MRR, [query_predict_1[0][0], query_predict_2[0][0]])
