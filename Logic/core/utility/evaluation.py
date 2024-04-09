@@ -216,29 +216,83 @@ class Evaluation:
         """
         NDCG = []
 
-        # TODO: Calculate NDCG here
-        DCG = self.calculate_DCG(actual, predicted)
+        for index, predict in enumerate(predicted):
+            query = predict[0][0]
+            predicted_movies = predict[1:]
+            predicted_ids = [p[0] for p in predicted_movies]
+            predicted_rels = [p[1] for p in predicted_movies]
+            actual_ids = [a[0] for a in actual[index][1:]]
+            actual_rels = [a[1] for a in actual[index][1:]]
+            query_DCG = []
+            ideal_DCG_ids = []
+            for i, predicted_id in enumerate(predicted_ids):
+                if predicted_id in actual_ids:
+                    if i == 0:
+                        ideal_DCG_ids.append(predicted_id)
+                        query_DCG.append(actual_rels[actual_ids.index(predicted_id)])
+                    else:
+                        DG = actual_rels[actual_ids.index(predicted_id)] / np.log2(i)
+                        query_DCG.append(DG)
+                        ideal_DCG_ids.append(predicted_id)
+            ideal_DCG_rels = [actual_rels[actual_ids.index(ideal_DCG_id)] for ideal_DCG_id in ideal_DCG_ids]
+            ideal_DCG_rels.sort(reverse=True)
+            ideal_CG = [ideal_DCG_rels[0]] + [(ideal_DCG_rels[idx] / np.log(idx+1)) for idx in range(1, len(ideal_DCG_rels))]
 
-        ideal_rankings = []
-        for actual_ranking in actual:
-            tmp = actual_ranking[1:].copy()
-            tmp.sort(key=lambda x: x[1], reverse=True)
-            ideal_rankings.append(tmp)
-
-        ideal_DCGs = []
-        for ranking in ideal_rankings:
-            ranking_DCG = [ranking[0][1]] + [(ranking[idx][1] / np.log2(idx+1)) for idx in range(1, len(ranking))]
-            for i in range(1, len(ranking_DCG)):
-                ranking_DCG[i] += ranking_DCG[i - 1]
-            ideal_DCGs.append(ranking_DCG)
-
-        for index, DCG_list in enumerate(DCG):
-            NDCG_list = []
-            for i in range(len(DCG_list)):
-                NDCG_list.append(DCG_list[i] / ideal_DCGs[index][i])
-            NDCG.append(NDCG_list)
-
+            for i in range(1, len(query_DCG)):
+                ideal_CG[i] += ideal_CG[i - 1]
+                query_DCG[i] += query_DCG[i - 1]
+            query_DCG = [(query_DCG[idx] / ideal_CG[idx]) for idx in range(len(ideal_CG))]
+            NDCG.append(query_DCG)
         return NDCG
+
+        # for query_index, predict in enumerate(predicted):
+        #     DCG = self.calculate_DCG([actual[query_index]], [predict])[0]
+        #     print(f"DCG ---> {DCG}")
+        #     intersect = set([a[0] for a in predict[1:]]).intersection([a[0] for a in actual[query_index][1:]])
+        #     print(f"intersect ---> {intersect}")
+        #     if len(intersect) != len(DCG):
+        #         raise ValueError("Incorrect DCG !")
+        #     else:
+        #         print("all good")
+        #
+        #     ideal_ranking = []
+        #     for actual_value in actual[query_index]:
+        #         if actual_value[0] in intersect:
+        #             ideal_ranking.append(actual_value[1])
+        #     ideal_ranking.sort(reverse=True)
+        #     ideal_ranking = ideal_ranking[0] + [(rank / np.log2(idx+1)) for idx, rank in enumerate(ideal_ranking)]
+        #     print(f"ideal ranking : {ideal_ranking}")
+        #     for i in range(1, len(ideal_ranking)):
+        #         ideal_ranking[i] += ideal_ranking[i-1]
+        #     for i in range(len(ideal_ranking)):
+        #         DCG.append(DCG / ideal_ranking[i])
+        #     NDCG.append(DCG)
+
+        # TODO: Calculate NDCG here
+        # DCG = self.calculate_DCG(actual, predicted)
+        # print(f"DCG : {DCG}")
+        # ideal_rankings = []
+        # for actual_ranking in actual:
+        #     tmp = actual_ranking[1:].copy()
+        #     tmp.sort(key=lambda x: x[1], reverse=True)
+        #     ideal_rankings.append(tmp)
+        #
+        # ideal_DCGs = []
+        # for ranking_index, ranking in enumerate(ideal_rankings):
+        #     intersected_ranking = []
+        #     actual_rels = [a[1] for a in actual[ranking_index][1:]]
+        #     print(f"acutual rels : {actual_rels}")
+        #     ranking_DCG = [ranking[0][1]] + [(actual_rels[idx] / np.log2(idx + 1)) for idx in range(1, len(ranking))]
+        #     for i in range(1, len(ranking_DCG)):
+        #         ranking_DCG[i] += ranking_DCG[i - 1]
+        #     ideal_DCGs.append(ranking_DCG)
+        #
+        # for index, DCG_list in enumerate(DCG):
+        #     NDCG_list = []
+        #     for i in range(len(DCG_list)):
+        #         NDCG_list.append(DCG_list[i] / ideal_DCGs[index][i])
+        #     NDCG.append(NDCG_list)
+        # return NDCG
 
     def calculate_RR(self, actual: List[List[str]], predicted: List[List[str]]) -> list[float]:
         """
