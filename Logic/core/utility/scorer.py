@@ -135,7 +135,9 @@ class Scorer:
                                                                     query_method)
         return scores
 
-    def get_vector_space_model_score(self, query, query_tfs, document_id, document_method, query_method):
+    def get_vector_space_model_score(
+        self, query, query_tfs, document_id, document_method, query_method
+    ):
         """
         Returns the Vector Space Model score of a document for a query.
 
@@ -198,7 +200,9 @@ class Scorer:
         w = math.sqrt(w)
         return [v / w for v in vector]
 
-    def compute_socres_with_okapi_bm25(self, query, average_document_field_length, document_lengths):
+    def compute_socres_with_okapi_bm25(
+        self, query, average_document_field_length, document_lengths
+    ):
         """
         compute scores with okapi bm25
 
@@ -262,6 +266,69 @@ class Scorer:
             score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + (b * doc_len / average_document_field_length)))
         return score
 
+    def compute_scores_with_unigram_model(
+        self, query, smoothing_method, document_lengths=None, alpha=0.5, lamda=0.5
+    ):
+        """
+        Calculates the scores for each document based on the unigram model.
+
+        Parameters
+        ----------
+        query : str
+            The query to search for.
+        smoothing_method : str (bayes | naive | mixture)
+            The method used for smoothing the probabilities in the unigram model.
+        document_lengths : dict
+            A dictionary of the document lengths. The keys are the document IDs, and the values are
+            the document's length in that field.
+        alpha : float, optional
+            The parameter used in bayesian smoothing method. Defaults to 0.5.
+        lamda : float, optional
+            The parameter used in some smoothing methods to balance between the document
+            probability and the collection probability. Defaults to 0.5.
+
+        Returns
+        -------
+        float
+            A dictionary of the document IDs and their scores.
+        """
+
+        # TODO
+        pass
+
+    def compute_score_with_unigram_model(
+        self, query, document_id, smoothing_method, document_lengths, alpha, lamda
+    ):
+        """
+        Calculates the scores for each document based on the unigram model.
+
+        Parameters
+        ----------
+        query : str
+            The query to search for.
+        document_id : str
+            The document to calculate the score for.
+        smoothing_method : str (bayes | naive | mixture)
+            The method used for smoothing the probabilities in the unigram model.
+        document_lengths : dict
+            A dictionary of the document lengths. The keys are the document IDs, and the values are
+            the document's length in that field.
+        alpha : float, optional
+            The parameter used in bayesian smoothing method. Defaults to 0.5.
+        lamda : float, optional
+            The parameter used in some smoothing methods to balance between the document
+            probability and the collection probability. Defaults to 0.5.
+
+        Returns
+        -------
+        float
+            The Unigram score of the document for the query.
+        """
+
+        # TODO
+        pass
+
+
 
 def main():
     query = "spider man in wonderland"
@@ -289,3 +356,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    
