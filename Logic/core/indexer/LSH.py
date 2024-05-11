@@ -6,7 +6,7 @@ import random
 import json
 import time
 
-from Logic.core.preprocess import Preprocessor
+from Logic.core.utility.preprocess import Preprocessor
 
 
 class MinHashLSH:

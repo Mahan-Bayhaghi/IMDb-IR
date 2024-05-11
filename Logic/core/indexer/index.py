@@ -5,9 +5,9 @@ import copy
 
 from nltk import word_tokenize
 
-from indexes_enum import Indexes
-import Logic.core.preprocess as preprocess
-
+from Logic.core.indexer.indexes_enum import Indexes
+# import Logic.core.preprocess as preprocess
+import Logic.core.utility.preprocess as preprocess
 
 class TrieNode:
     def __init__(self):

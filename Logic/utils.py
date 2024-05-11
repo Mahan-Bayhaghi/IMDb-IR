@@ -9,7 +9,7 @@ from typing import Dict, List
 from Logic.core import path_access
 from Logic.core.indexer.indexes_enum import Indexes
 from Logic.core.search import SearchEngine
-from Logic.core.spell_correction import SpellCorrection
+from Logic.core.utility.spell_correction import SpellCorrection
 
 movies_dataset = None  # TODO: load your movies dataset (from the json file you saved your indexes in), here
 # You can refer to `get_movie_by_id` to see how this is used.

@@ -1,6 +1,7 @@
-from .graph import LinkGraph
-from ..indexer.indexes_enum import Indexes
-from ..indexer.index_reader import Index_reader
+from Logic.core.link_analysis.graph import LinkGraph
+from Logic.core.indexer.indexes_enum import Indexes
+from Logic.core.indexer.index_reader import Index_reader
+
 
 class LinkAnalyzer:
     def __init__(self, root_set):

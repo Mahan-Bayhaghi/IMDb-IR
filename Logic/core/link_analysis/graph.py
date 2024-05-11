@@ -1,5 +1,6 @@
 import networkx as nx
 
+
 class LinkGraph:
     """
     Use this class to implement the required graph in link analysis.

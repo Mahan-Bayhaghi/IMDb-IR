@@ -1,6 +1,6 @@
 import collections
 import json
-from Logic.core.preprocess import Preprocessor
+from Logic.core.utility.preprocess import Preprocessor
 
 
 class SpellCorrection:

@@ -3,8 +3,8 @@ import json
 import numpy as np
 
 from Logic.core import path_access
-from Logic.core.preprocess import Preprocessor
-from Logic.core.scorer import Scorer
+from Logic.core.utility.preprocess import Preprocessor
+from Logic.core.utility.scorer import Scorer
 from Logic.core.indexer.indexes_enum import Indexes, Index_types
 from Logic.core.indexer.index_reader import Index_reader
 import Logic.core.path_access
