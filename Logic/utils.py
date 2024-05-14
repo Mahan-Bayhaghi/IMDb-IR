@@ -13,7 +13,7 @@ from Logic.core.utility.spell_correction import SpellCorrection
 
 movies_dataset = None  # TODO: load your movies dataset (from the json file you saved your indexes in), here
 # You can refer to `get_movie_by_id` to see how this is used.
-# search_engine = SearchEngine()
+search_engine = SearchEngine()
 
 
 def import_dataset():
@@ -53,6 +53,9 @@ def search(
         weights_list=None,
         should_print=False,
         preferred_genre: str = None,
+        unigram_smoothing=None,
+        alpha=None,
+        lamda=None,
 ):
     """
     Finds relevant documents to query

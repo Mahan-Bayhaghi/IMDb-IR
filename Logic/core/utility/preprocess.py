@@ -7,7 +7,7 @@ from nltk.tokenize import word_tokenize
 
 def load_stopwords(filepath):
     stopwords = []
-    absolute_path = "D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/"
+    absolute_path = "D:/Sharif/Daneshgah stuff/term 6/mir/project/IMDb-IR/Logic/core/utility/"
     with open(absolute_path + filepath, 'r') as file:
         for line in file:
             stopwords.append(line.strip())
@@ -44,7 +44,8 @@ class Preprocessor:
         """
         preprocessed_documents = []
         for document in self.documents:
-            fields_to_preprocess = [("summaries", True), ("synopsis", True), ("first_page_summary", False), ("genres", True), ("stars", True)]
+            fields_to_preprocess = [("summaries", True), ("synopsis", True), ("first_page_summary", False),
+                                    ("genres", True), ("stars", True)]
             preprocessed_document = self.preprocess_one_document(document, fields_to_preprocess=fields_to_preprocess)
             preprocessed_documents.append(preprocessed_document)
         return preprocessed_documents
@@ -80,7 +81,7 @@ class Preprocessor:
                     else:
                         document[field] = self.preprocess_one_text(document[field])
                 except Exception as e:
-                    print(e)
+                    print(f"field {e} failed")
             return document
 
     def normalize(self, text: str):
@@ -178,19 +179,34 @@ class Preprocessor:
         return ' '.join(cleaned_words)
 
 
+def replace_null_values(movies):
+    list_fields = ["directors", "writers", "directors", "languages", "countries_of_origin", "summaries", "synposis",
+                   "reviews", "genres"]
+    for movie in movies:
+        for key in movie.keys():
+            if key in list_fields and movie[key] is None:
+                movie[key] = []
+            elif movie[key] is None:
+                movie[key] = "N/A"
+
+
 def preprocess_dataset(filepath):
     with open(filepath, 'r') as file:
         data = json.load(file)
     all_movies = [movie for movie in data]
     preprocessor = Preprocessor(all_movies)
     preprocessed_movies = preprocessor.preprocess()
+    replace_null_values(preprocessed_movies)
+    replace_null_values(all_movies)
     with open(filepath.replace(".json", "_preprocessed.json"), 'w') as file:
         json.dump(preprocessed_movies, file, indent=4)
+    with open(filepath.replace(".json", ".json"), 'w') as file:
+        json.dump(all_movies, file, indent=4)
 
 
 def main():
-    preprocess_dataset("../IMDB_crawled.json")
-    preprocess_dataset("./LSHFakeData.json")
+    preprocess_dataset("../../IMDB_crawled.json")
+    # preprocess_dataset("../LSHFakeData.json")
 
 
 if __name__ == "__main__":

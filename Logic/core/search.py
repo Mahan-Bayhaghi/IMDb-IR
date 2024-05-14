@@ -43,6 +43,7 @@ class SearchEngine:
         self.metadata_index = Index_reader(
             path, Indexes.DOCUMENTS, Index_types.METADATA
         )
+        self.number_of_documents = self.metadata_index.index["document_count"]
 
     def search(
         self,

@@ -476,7 +476,7 @@ def main():
     index.store_all_index(path="./saved_indexes/")
 
     # check methods
-    index.check_add_remove_is_correct()
+    # index.check_add_remove_is_correct()
     index.load_index("./saved_indexes/")
     print(
         f"index loaded correctly : "

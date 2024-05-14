@@ -6,8 +6,8 @@ from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from .data_loader import ReviewLoader
-from .basic_classifier import BasicClassifier
+from Logic.core.classification.data_loader import ReviewLoader
+from Logic.core.classification.basic_classifier import BasicClassifier
 
 
 class ReviewDataSet(Dataset):

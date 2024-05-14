@@ -7,7 +7,7 @@ sys.path.append("../")
 
 from Logic import utils
 from enum import Enum
-from Logic.core.snippet import Snippet
+from Logic.core.utility.snippet import Snippet
 
 snippet_obj = Snippet(
     number_of_words_on_each_side=10
@@ -152,7 +152,7 @@ def search_handling(
                 search_max_num,
                 search_method,
                 search_weights,
-                unigram_smoothing=unigram_smoothing,
+                # unigram_smoothing=unigram_smoothing,
                 alpha=alpha,
                 lamda=lamda,
             )

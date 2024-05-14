@@ -31,13 +31,16 @@ class SpellCorrection:
 
         """
 
-        fields = ["title", "stars", "first_page_summary", "summaries", "synopsis"]
+        fields = ["title", "stars", "first_page_summary", "summaries"]
         valuable_fields = []
         preprocessor = Preprocessor(None)
         for document in all_documents:
             long_str = []
+            # print(f"Document is {document}")
+            # print(f"Doc type is {type(document)}")
             for field in fields:
-                if document[field] is None:
+                # print(f"field is {field}")
+                if document[field] == "N/A" or document[field] == []:
                     continue
                 if field == "first_page_summary" or field == "title":
                     long_str.append(preprocessor.light_preprocess_one_text(document[field]))
