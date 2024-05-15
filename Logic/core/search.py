@@ -9,6 +9,7 @@ from Logic.core.indexer.indexes_enum import Indexes, Index_types
 from Logic.core.indexer.index_reader import Index_reader
 import Logic.core.path_access
 
+
 class SearchEngine:
     def __init__(self):
         """
@@ -46,15 +47,15 @@ class SearchEngine:
         self.number_of_documents = self.metadata_index.index["document_count"]
 
     def search(
-        self,
-        query,
-        method,
-        weights,
-        safe_ranking=True,
-        max_results=10,
-        smoothing_method=None,
-        alpha=0.5,
-        lamda=0.5,
+            self,
+            query,
+            method,
+            weights,
+            safe_ranking=True,
+            max_results=10,
+            smoothing_method=None,
+            alpha=0.5,
+            lamda=0.5,
     ):
         """
         searches for the query in the indexes.
@@ -91,9 +92,10 @@ class SearchEngine:
 
         scores = {}
         if method == "unigram":
-            self.find_scores_with_unigram_model(
+            scores = self.find_scores_with_unigram_model(
                 query, smoothing_method, weights, scores, alpha, lamda
             )
+
         elif safe_ranking:
             self.find_scores_with_safe_ranking(query, method, weights, scores)
         else:
@@ -101,6 +103,7 @@ class SearchEngine:
                 query, method, weights, max_results, scores
             )
 
+        print(f"scores is {scores}")
         final_scores = {}
 
         self.aggregate_scores(weights, scores, final_scores)
@@ -135,7 +138,7 @@ class SearchEngine:
             final_scores[document_id] = final_document_score
 
     def find_scores_with_unsafe_ranking(
-        self, query, method, weights, max_results, scores
+            self, query, method, weights, max_results, scores
     ):
         """
         Finds the scores of the documents using the unsafe ranking method using the tiered index.
@@ -181,7 +184,7 @@ class SearchEngine:
         return scores
 
     def find_scores_with_unigram_model(
-        self, query, smoothing_method, weights, scores, alpha=0.5, lamda=0.5
+            self, query, smoothing_method, weights, scores, alpha=0.5, lamda=0.5
     ):
         """
         Calculates the scores for each document based on the unigram model.
@@ -203,7 +206,25 @@ class SearchEngine:
             probability and the collection probability. Defaults to 0.5.
         """
         # TODO
-        pass
+        print(f"weights is {weights}")
+        for field in weights:
+            # TODO
+            print(f"------------------- field is {field} -------------------")
+            print(f"query is : {query}")
+            index = self.document_indexes[field].index
+            index_scorer = Scorer(index, self.number_of_documents, index_needed_for_dfs=index)
+            scoring_result = index_scorer.compute_scores_with_unigram_model(query, smoothing_method, document_lengths=self.document_lengths_index[field].index, alpha=alpha, lamda=lamda)
+            for document_id in scoring_result.keys():
+                if document_id not in scores.keys():
+                    scores[document_id] = {}
+                scores[document_id][field] = scoring_result[document_id]
+
+        for document_id, scores_dict in scores.items():
+            for field in weights:
+                if field not in scores_dict:
+                    scores_dict[field] = -100
+
+        return scores
 
     def merge_scores(self, scores1, scores2):
         """
@@ -292,4 +313,3 @@ if __name__ == "__main__":
     # result = search_engine.search(query, method, weights, safe_ranking=False, max_results=20)
 
     print(f"final search result is \n {result}")
-

@@ -28,6 +28,11 @@ class Scorer:
         else:
             self.index_needed_for_dfs = index
 
+        # T = len(self.index.keys())  # total number of tokens in collection
+        self.T = 0
+        for term, dic in self.index.items():
+            self.T += sum(dic.values())
+
     def get_list_of_documents(self, query):
         """
         Returns a list of documents that contain at least one of the terms in the query.
@@ -80,7 +85,7 @@ class Scorer:
         idf = self.idf.get(term, None)
         if idf is None:
             df = len(self.index_needed_for_dfs.get(term, {}).keys())
-            idf = np.log(self.N / (df+1))
+            idf = np.log(self.N / (df + 1))
             # if df != 0:
             #     idf = np.log(self.N / df)
             # else:
@@ -136,7 +141,7 @@ class Scorer:
         return scores
 
     def get_vector_space_model_score(
-        self, query, query_tfs, document_id, document_method, query_method
+            self, query, query_tfs, document_id, document_method, query_method
     ):
         """
         Returns the Vector Space Model score of a document for a query.
@@ -166,7 +171,8 @@ class Scorer:
 
         for term in query:
             # tf handling for document
-            tf_in_document = self.index_needed_for_dfs.get(term, {}).get(document_id, 0)  # TODO: search in index using Trie
+            tf_in_document = self.index_needed_for_dfs.get(term, {}).get(document_id,
+                                                                         0)  # TODO: search in index using Trie
             if document_method[0] == 'l':
                 tf_in_document = np.log(tf_in_document + 1)
             # df handling for document
@@ -201,7 +207,7 @@ class Scorer:
         return [v / w for v in vector]
 
     def compute_socres_with_okapi_bm25(
-        self, query, average_document_field_length, document_lengths
+            self, query, average_document_field_length, document_lengths
     ):
         """
         compute scores with okapi bm25
@@ -266,45 +272,15 @@ class Scorer:
             score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + (b * doc_len / average_document_field_length)))
         return score
 
-    def compute_scores_with_unigram_model(
-        self, query, smoothing_method, document_lengths=None, alpha=0.5, lamda=0.5
+    def get_score_with_unigram_model(
+            self, query, document_id, smoothing_method, document_lengths, alpha, lamda
     ):
         """
         Calculates the scores for each document based on the unigram model.
 
         Parameters
         ----------
-        query : str
-            The query to search for.
-        smoothing_method : str (bayes | naive | mixture)
-            The method used for smoothing the probabilities in the unigram model.
-        document_lengths : dict
-            A dictionary of the document lengths. The keys are the document IDs, and the values are
-            the document's length in that field.
-        alpha : float, optional
-            The parameter used in bayesian smoothing method. Defaults to 0.5.
-        lamda : float, optional
-            The parameter used in some smoothing methods to balance between the document
-            probability and the collection probability. Defaults to 0.5.
-
-        Returns
-        -------
-        float
-            A dictionary of the document IDs and their scores.
-        """
-
-        # TODO
-        pass
-
-    def compute_score_with_unigram_model(
-        self, query, document_id, smoothing_method, document_lengths, alpha, lamda
-    ):
-        """
-        Calculates the scores for each document based on the unigram model.
-
-        Parameters
-        ----------
-        query : str
+        query : list[str]
             The query to search for.
         document_id : str
             The document to calculate the score for.
@@ -324,16 +300,91 @@ class Scorer:
         float
             The Unigram score of the document for the query.
         """
-
         # TODO
-        pass
+        query_as_list = query
+        print(f"query in scorer is {query}")
+        document_length = document_lengths.get(document_id, 1e10)
 
+        query_term_cfs_in_corpus = {}
+        query_term_tfs_in_document = {}
+
+        for term in query_as_list:
+            query_term_tfs_in_document[term] = self.index.get(term, {}).get(document_id, 0)
+            query_term_cfs_in_corpus[term] = sum(self.index.get(term, {}).values())
+
+        print(f"doc_id is {document_id}")
+        # print(f"query_as_list is {query_as_list}")
+        print(f"document_length is {document_length}")
+        # print(f"T is {self.T}")
+        print(f"query_term_cfs_in_corpus is {query_term_cfs_in_corpus}")
+        print(f"query_term_tfs_in_document is {query_term_tfs_in_document}")
+
+        score = 1.0
+        RSV = 0.0
+
+        for term in query_as_list:
+            if smoothing_method == "naive":
+                temp_score = query_term_tfs_in_document.get(term, 0) / document_length  # simply use tf_{t,d} / L_d
+            elif smoothing_method == "bayes":
+                temp_score = (query_term_tfs_in_document.get(term, 0) + alpha * (
+                        query_term_cfs_in_corpus.get(term, 0) / self.T)) / (document_length + alpha)
+            else:  # mixture smoothing
+                temp_score = (lamda * query_term_tfs_in_document.get(term, 0) / document_length) + (1 - lamda) * (
+                        query_term_cfs_in_corpus.get(term, 0) / self.T)
+            score *= temp_score
+            # print(f"score became {score}")
+            # if temp_score == 0:
+            #     RSV += 0
+            if temp_score != 0:
+                RSV += np.log(temp_score)
+
+        print(f"RSV : {RSV}\n")
+        if RSV == 0:
+            RSV = -1000
+        return RSV
+
+    def compute_scores_with_unigram_model(
+            self, query, smoothing_method, document_lengths=None, alpha=0.5, lamda=0.5
+    ):
+        """
+        Calculates the scores for each document based on the unigram model.
+
+        Parameters
+        ----------
+        query : str
+            The query to search for.
+        smoothing_method : str (bayes | naive | mixture)
+            The method used for smoothing the probabilities in the unigram model.
+        document_lengths : dict
+            A dictionary of the document lengths. The keys are the document IDs, and the values are
+            the document's length in that field.
+        alpha : float, optional
+            The parameter used in bayesian smoothing method. Defaults to 0.5.
+        lamda : float, optional
+            The parameter used in some smoothing methods to balance between the document
+            probability and the collection probability. Defaults to 0.5.
+
+        Returns
+        -------
+        scores
+            A dictionary of the document IDs and their scores.
+        """
+        # TODO
+        scores = {}
+        query_as_list = query
+        print(f"my query as list is : {query_as_list}")
+        for document_id in self.get_list_of_documents(query_as_list):
+            scores[document_id] = \
+                self.get_score_with_unigram_model(query=query, document_id=document_id,
+                                                  smoothing_method=smoothing_method, document_lengths=document_lengths,
+                                                  alpha=alpha, lamda=lamda)
+        return scores
 
 
 def main():
     query = "spider man in wonderland"
     method = "lnc.ltn"
-    path = path_access.path_to_logic()+"core/indexer/saved_indexes/"
+    path = path_access.path_to_logic() + "core/indexer/saved_indexes/"
     reader = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES)
     query = "meet success"
     query_as_list = query.split()
@@ -344,7 +395,9 @@ def main():
         sorted_vector_space_result.append((k, v))
     sorted_vector_space_result.sort(key=lambda x: x[1], reverse=True)
     print(sorted_vector_space_result)
-    print("----"*10)
+
+    print("\n", "----" * 25, "\n", )
+
     reader2 = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES, indexes_enum.Index_types.DOCUMENT_LENGTH)
     okapi_bm25_result = scorer.compute_socres_with_okapi_bm25(query_as_list, 1251.9806332616047, reader2.index)
     sorted_okapi_bm25_result = []
@@ -353,8 +406,26 @@ def main():
     sorted_okapi_bm25_result.sort(key=lambda x: x[1], reverse=True)
     print(sorted_okapi_bm25_result)
 
+    print("\n", "----" * 25, "\n", )
+
+    query = "spider man in wonderland"
+    method = "unigram"
+    path = path_access.path_to_logic() + "core/indexer/saved_indexes/"
+    reader = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES)
+    query = "greed crime mafia"
+    query_as_list = query.split()
+    scorer = Scorer(reader.index, 9950)
+
+    document_length = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES,
+                                                indexes_enum.Index_types.DOCUMENT_LENGTH).index
+    unigram_model_results = scorer.compute_scores_with_unigram_model(query_as_list, "bayes", document_length, alpha=0.5,
+                                                                     lamda=0.4)
+    sorted_unigram_model_results = []
+    for k, v in unigram_model_results.items():
+        sorted_unigram_model_results.append((k, v))
+    sorted_unigram_model_results.sort(key=lambda x: x[1], reverse=True)
+    print(sorted_unigram_model_results)
+
 
 if __name__ == "__main__":
     main()
-
-    
