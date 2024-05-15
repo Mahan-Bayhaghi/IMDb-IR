@@ -165,7 +165,7 @@ class SearchEngine:
                 index_scorer = Scorer(tiered_index[tier], self.number_of_documents, index_needed_for_dfs=normal_index)
                 print(f"field {field} and tier {tier} index loaded {index_scorer}")
                 if method == "OkapiBM25":
-                    scoring_result = index_scorer.compute_socres_with_okapi_bm25 \
+                    scoring_result = index_scorer.compute_scores_with_okapi_bm25 \
                         (query, self.metadata_index.index["average_document_length"][field.value],
                          self.document_lengths_index[field].index)
                 else:
@@ -209,8 +209,8 @@ class SearchEngine:
         print(f"weights is {weights}")
         for field in weights:
             # TODO
-            print(f"------------------- field is {field} -------------------")
-            print(f"query is : {query}")
+            # print(f"------------------- field is {field} -------------------")
+            # print(f"query is : {query}")
             index = self.document_indexes[field].index
             index_scorer = Scorer(index, self.number_of_documents, index_needed_for_dfs=index)
             scoring_result = index_scorer.compute_scores_with_unigram_model(query, smoothing_method, document_lengths=self.document_lengths_index[field].index, alpha=alpha, lamda=lamda)
@@ -278,7 +278,7 @@ class SearchEngine:
             index = self.document_indexes[field].index
             index_scorer = Scorer(index, self.number_of_documents, index_needed_for_dfs=index)
             if method == "OkapiBM25":
-                scoring_result = index_scorer.compute_socres_with_okapi_bm25 \
+                scoring_result = index_scorer.compute_scores_with_okapi_bm25 \
                     (query, self.metadata_index.index["average_document_length"][field.value],
                      self.document_lengths_index[field].index)
             else:

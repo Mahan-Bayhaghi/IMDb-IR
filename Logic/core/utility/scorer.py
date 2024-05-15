@@ -206,7 +206,7 @@ class Scorer:
         w = math.sqrt(w)
         return [v / w for v in vector]
 
-    def compute_socres_with_okapi_bm25(
+    def compute_scores_with_okapi_bm25(
             self, query, average_document_field_length, document_lengths
     ):
         """
@@ -302,7 +302,7 @@ class Scorer:
         """
         # TODO
         query_as_list = query
-        print(f"query in scorer is {query}")
+        # print(f"query in scorer is {query}")
         document_length = document_lengths.get(document_id, 1e10)
 
         query_term_cfs_in_corpus = {}
@@ -312,12 +312,12 @@ class Scorer:
             query_term_tfs_in_document[term] = self.index.get(term, {}).get(document_id, 0)
             query_term_cfs_in_corpus[term] = sum(self.index.get(term, {}).values())
 
-        print(f"doc_id is {document_id}")
-        # print(f"query_as_list is {query_as_list}")
-        print(f"document_length is {document_length}")
-        # print(f"T is {self.T}")
-        print(f"query_term_cfs_in_corpus is {query_term_cfs_in_corpus}")
-        print(f"query_term_tfs_in_document is {query_term_tfs_in_document}")
+        # print(f"doc_id is {document_id}")
+        # # print(f"query_as_list is {query_as_list}")
+        # print(f"document_length is {document_length}")
+        # # print(f"T is {self.T}")
+        # print(f"query_term_cfs_in_corpus is {query_term_cfs_in_corpus}")
+        # print(f"query_term_tfs_in_document is {query_term_tfs_in_document}")
 
         score = 1.0
         RSV = 0.0
@@ -332,13 +332,12 @@ class Scorer:
                 temp_score = (lamda * query_term_tfs_in_document.get(term, 0) / document_length) + (1 - lamda) * (
                         query_term_cfs_in_corpus.get(term, 0) / self.T)
             score *= temp_score
-            # print(f"score became {score}")
             # if temp_score == 0:
             #     RSV += 0
             if temp_score != 0:
                 RSV += np.log(temp_score)
 
-        print(f"RSV : {RSV}\n")
+        # print(f"RSV : {RSV}\n")
         if RSV == 0:
             RSV = -1000
         return RSV
@@ -399,7 +398,7 @@ def main():
     print("\n", "----" * 25, "\n", )
 
     reader2 = index_reader.Index_reader(path, indexes_enum.Indexes.SUMMARIES, indexes_enum.Index_types.DOCUMENT_LENGTH)
-    okapi_bm25_result = scorer.compute_socres_with_okapi_bm25(query_as_list, 1251.9806332616047, reader2.index)
+    okapi_bm25_result = scorer.compute_scores_with_okapi_bm25(query_as_list, 1251.9806332616047, reader2.index)
     sorted_okapi_bm25_result = []
     for k, v in okapi_bm25_result.items():
         sorted_okapi_bm25_result.append((k, v))
