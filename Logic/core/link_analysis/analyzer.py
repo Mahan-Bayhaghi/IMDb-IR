@@ -183,8 +183,8 @@ if __name__ == "__main__":
         corpus = json.load(file)
 
     # root_set = []  # TODO: it should be a subset of your corpus
-    root_set = random.sample(corpus, 50)
-    root_set = corpus[:100]
+    root_set = random.sample(corpus, 500)
+    # root_set = corpus[:100]
     print("root set sampled")
 
     analyzer = LinkAnalyzer(root_set=root_set)
