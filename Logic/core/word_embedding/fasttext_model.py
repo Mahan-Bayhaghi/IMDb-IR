@@ -184,8 +184,8 @@ if __name__ == "__main__":
     # ft_model.prepare(None, mode="load")
 
     # training model
-    # ft_model.train("./preprocessed_training_data.txt")
-    ft_model.prepare("./preprocessed_training_data.txt", mode="train", epochs=30)
+    ft_model.train("./preprocessed_training_data.txt")
+    ft_model.prepare("./preprocessed_training_data.txt", mode="train", epochs=50)
     print(f"model trained successfully")
 
     # saving model
