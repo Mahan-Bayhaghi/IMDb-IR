@@ -79,69 +79,20 @@ class LinkAnalyzer:
                     if star not in self.hubs:
                         self.hubs.append(star)
 
-        print(f"authorities are {self.authorities}")
-        print(f"hubs are {self.hubs}")
+        for movie in corpus:
+            movie_id = movie["id"]
+            stars = movie["stars"]
+            if stars == "N/A":
+                stars = []
+            for star in stars:
+                # get more movies from known stars in root_set
+                if star in self.hubs and movie_id not in self.authorities:
+                    self.authorities.append(movie_id)
+                    self.graph.add_node(movie_id)
+                    self.graph.add_edge(star, movie_id)
 
-    def hits_(self, num_iteration=5, max_result=10):
-        """
-        Return the top movies and actors using the Hits algorithm
-
-        Parameters
-        ----------
-        num_iteration: int
-            Number of algorithm execution iterations
-        max_result: int
-            The maximum number of results to return. If None, all results are returned.
-
-        Returns
-        -------
-        list
-            List of names of 10 actors with the most scores obtained by Hits algorithm in descending order
-        list
-            List of names of 10 movies with the most scores obtained by Hits algorithm in descending order
-        """
-        a_s = []
-        h_s = []
-
-        # TODO
-        # for node in self.graph.graph.nodes():
-        #     if isinstance(node, str):
-        #         self.hubs.append(node)
-        #     else:
-        #         self.authorities.append(node)
-
-        # hits algorithm
-        for _ in range(num_iteration):
-            new_a = {}
-            new_h = {}
-
-            for node in self.graph.graph.nodes():
-                # print(f"Node is {node}")
-                auth_score = 0.0
-                hub_score = 0.0
-
-                if node in self.authorities:
-                    print(f"node is {node} in authorities")
-                    predecessors = self.graph.get_predecessors(node)
-                    for predecessor in predecessors:
-                        auth_score += self.hubs.count(predecessor)
-                else:
-                    print(f"node is {node} in hubs")
-                    successors = self.graph.get_successors(node)
-                    for successor in successors:
-                        hub_score += self.authorities.count(successor)
-
-                new_a[node] = auth_score
-                new_h[node] = hub_score
-
-            self.authorities = list(new_a.keys())
-            self.hubs = list(new_h.keys())
-
-        # now let's sort them
-        h_s = sorted(self.hubs, key=lambda x: self.hubs.count(x), reverse=True)[:max_result]
-        a_s = sorted(self.authorities, key=lambda x: self.authorities.count(x), reverse=True)[:max_result]
-
-        return a_s, h_s
+        # print(f"authorities are {len(self.authorities)} objects")
+        # print(f"hubs are {len(self.hubs)} objects")
 
     def hits(self, num_iteration=5, max_result=10):
         auth_scores = {node: 1.0 for node in self.authorities}
@@ -182,13 +133,10 @@ if __name__ == "__main__":
     with open(preprocessed_crawled_data_path, 'r') as file:
         corpus = json.load(file)
 
-    # root_set = []  # TODO: it should be a subset of your corpus
-    root_set = random.sample(corpus, 500)
-    # root_set = corpus[:100]
+    root_set = random.sample(corpus, 500)   # random sample of size 500 for root_set
     print("root set sampled")
 
     analyzer = LinkAnalyzer(root_set=root_set)
-
     analyzer.expand_graph(corpus=corpus)
     print("graph expanded")
     actors, movies = analyzer.hits(num_iteration=5, max_result=5)
