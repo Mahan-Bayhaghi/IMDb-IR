@@ -1,17 +1,12 @@
-import itertools
 import re
 
-import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from sklearn.preprocessing import LabelEncoder
-from Logic.core.indexer.index_reader import Index_reader
-from Logic.core.indexer.indexes_enum import Indexes
-import Logic.core.path_access as path_access
-from tqdm import tqdm
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from scipy.spatial import distance
+
+import Logic.core.path_access as path_access
+from Logic.core.indexer.index_reader import Index_reader
+from Logic.core.indexer.indexes_enum import Indexes
 
 
 def preprocess_text(text, minimum_length=1, stopword_removal=True, stopwords_domain=[], lower_case=True,

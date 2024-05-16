@@ -1,14 +1,8 @@
 import fasttext
-import re
-
-from tqdm import tqdm
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from scipy.spatial import distance
 
 from Logic.core import path_access
 from Logic.core.word_embedding.fasttext_data_loader import FastTextDataLoader
-from Logic.core.word_embedding.fasttext_data_loader import preprocess_text
 
 
 class FastText:
@@ -85,21 +79,6 @@ class FastText:
         analogies = self.model.get_analogies(word1, word2, word3)
         print(analogies)
         return analogies[0][1]
-        # Obtain word embeddings for the words in the analogy
-        # TODO
-
-        # Perform vector arithmetic
-        # TODO
-
-        # Create a dictionary mapping each word in the vocabulary to its corresponding vector
-        # TODO
-
-        # Exclude the input words from the possible results
-        # TODO
-
-        # Find the word whose vector is closest to the result vector
-        # TODO
-        passI
 
     def detailed_analogy(self, word1, word2, word3):
         """
@@ -118,11 +97,14 @@ class FastText:
         embeddings_word2 = self.model[word2]
         embeddings_word3 = self.model[word3]
 
+        # Perform vector arithmetic
         analogy_vector = embeddings_word2 - embeddings_word1 + embeddings_word3
         word_embeddings = {word: self.model[word] for word in self.model.words}
 
+        # Create a dictionary mapping each word in the vocabulary to its corresponding vector
         candidate_words = set(self.model.words) - {word1, word2, word3}  # don't use input words for candidate words !
 
+        # Find the word whose vector is closest to the result vector
         closest_word = None
         min_distance = float('inf')
         for word in candidate_words:
