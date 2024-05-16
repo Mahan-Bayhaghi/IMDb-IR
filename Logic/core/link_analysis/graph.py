@@ -14,7 +14,6 @@ class LinkGraph:
         self.graph = nx.DiGraph()
 
     def add_edge(self, u_of_edge, v_of_edge):
-        print(f"added edge from {u_of_edge} to {v_of_edge}")
         self.graph.add_edge(u_of_edge, v_of_edge)
 
     def add_node(self, node_to_add):

@@ -24,8 +24,8 @@ class LinkAnalyzer:
         """
         self.root_set = root_set
         self.graph = LinkGraph()
-        self.hubs = []
-        self.authorities = []
+        self.hubs = []  # stars are hubs
+        self.authorities = []   # ids are authorities
         self.initiate_params()
 
     def initiate_params(self):
@@ -43,12 +43,11 @@ class LinkAnalyzer:
             self.graph.add_node(movie_id)
             if movie["stars"] != "N/A":
                 for star in movie["stars"]:
-                    print(f"star is {star}")
                     self.graph.add_node(star)
                     self.graph.add_edge(star, movie_id)
         # nx.draw(self.graph)
         # print(f"{self.graph.get_predecessors(ido)}")
-        print("done")
+        print("root set initiated")
 
     def expand_graph(self, corpus):
         """
@@ -66,11 +65,24 @@ class LinkAnalyzer:
         To build the base set, we need to add the hubs and authorities that are inside the corpus
         and refer to the nodes in the root set to the graph and to the list of hubs and authorities.
         """
-        for movie in corpus:
+        for movie in self.root_set:
             # TODO
-            pass
+            movie_id = movie["id"]
+            self.graph.add_node(movie_id)
+            if movie_id not in self.authorities:
+                self.authorities.append(movie_id)
 
-    def hits(self, num_iteration=5, max_result=10):
+            if movie["stars"] != "N/A":
+                for star in movie["stars"]:
+                    self.graph.add_node(star)
+                    self.graph.add_edge(star, movie_id)
+                    if star not in self.hubs:
+                        self.hubs.append(star)
+
+        print(f"authorities are {self.authorities}")
+        print(f"hubs are {self.hubs}")
+
+    def hits_(self, num_iteration=5, max_result=10):
         """
         Return the top movies and actors using the Hits algorithm
 
@@ -92,8 +104,74 @@ class LinkAnalyzer:
         h_s = []
 
         # TODO
+        # for node in self.graph.graph.nodes():
+        #     if isinstance(node, str):
+        #         self.hubs.append(node)
+        #     else:
+        #         self.authorities.append(node)
+
+        # hits algorithm
+        for _ in range(num_iteration):
+            new_a = {}
+            new_h = {}
+
+            for node in self.graph.graph.nodes():
+                # print(f"Node is {node}")
+                auth_score = 0.0
+                hub_score = 0.0
+
+                if node in self.authorities:
+                    print(f"node is {node} in authorities")
+                    predecessors = self.graph.get_predecessors(node)
+                    for predecessor in predecessors:
+                        auth_score += self.hubs.count(predecessor)
+                else:
+                    print(f"node is {node} in hubs")
+                    successors = self.graph.get_successors(node)
+                    for successor in successors:
+                        hub_score += self.authorities.count(successor)
+
+                new_a[node] = auth_score
+                new_h[node] = hub_score
+
+            self.authorities = list(new_a.keys())
+            self.hubs = list(new_h.keys())
+
+        # now let's sort them
+        h_s = sorted(self.hubs, key=lambda x: self.hubs.count(x), reverse=True)[:max_result]
+        a_s = sorted(self.authorities, key=lambda x: self.authorities.count(x), reverse=True)[:max_result]
 
         return a_s, h_s
+
+    def hits(self, num_iteration=5, max_result=10):
+        auth_scores = {node: 1.0 for node in self.authorities}
+        hub_scores = {node: 1.0 for node in self.hubs}
+
+        # hits algorithm
+        for _ in range(num_iteration):
+            new_auth_scores = {}
+            new_hub_scores = {}
+
+            # update authority score
+            for node in auth_scores:
+                new_auth_score = sum(hub_scores[pred] for pred in self.graph.get_predecessors(node))
+                new_auth_scores[node] = new_auth_score
+
+            # update hub score
+            for node in hub_scores:
+                new_hub_score = sum(auth_scores[succ] for succ in self.graph.get_successors(node))
+                new_hub_scores[node] = new_hub_score
+
+            # values could be as large as possible, let's normalize them
+            auth_sum = sum(new_auth_scores.values())
+            hub_sum = sum(new_hub_scores.values())
+            auth_scores = {node: score / auth_sum for node, score in new_auth_scores.items()}
+            hub_scores = {node: score / hub_sum for node, score in new_hub_scores.items()}
+
+        h_s = sorted(self.hubs, key=lambda x: hub_scores.get(x, 0), reverse=True)[:max_result]
+        a_s = sorted(self.authorities, key=lambda x: auth_scores.get(x, 0), reverse=True)[:max_result]
+
+        return h_s, a_s
 
 
 if __name__ == "__main__":
@@ -105,11 +183,15 @@ if __name__ == "__main__":
         corpus = json.load(file)
 
     # root_set = []  # TODO: it should be a subset of your corpus
-    root_set = random.sample(corpus, int(len(corpus)/100))
+    root_set = random.sample(corpus, 50)
+    root_set = corpus[:100]
+    print("root set sampled")
 
     analyzer = LinkAnalyzer(root_set=root_set)
+
     analyzer.expand_graph(corpus=corpus)
-    actors, movies = analyzer.hits(max_result=5)
+    print("graph expanded")
+    actors, movies = analyzer.hits(num_iteration=5, max_result=5)
     print("Top Actors:")
     print(*actors, sep=' - ')
     print("Top Movies:")
