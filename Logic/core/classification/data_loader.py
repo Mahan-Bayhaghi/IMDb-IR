@@ -14,10 +14,12 @@ class ReviewLoader:
         self.file_path = file_path
         self.fasttext_model = FastText()
         self.review_tokens = []
+        self.review_texts = []
         self.sentiments = []
         self.embeddings = []
 
-    def load_data(self, load_fasttext_model=False, fasttext_model_path=None, train_epochs=5):
+    def load_data(self, load_fasttext_model=False, dataset_path="IMDB Dataset.csv", fasttext_model_path=None,
+                  train_epochs=5, dont_train=False):
         """
         Load the data from the csv file and preprocess the text. Then save the normalized tokens and the sentiment labels.
         Also, load the fasttext model.
@@ -27,18 +29,19 @@ class ReviewLoader:
         if load_fasttext_model and fasttext_model_path is not None:
             self.fasttext_model.load_model(fasttext_model_path)
             print(f"loaded model with dimensions {self.fasttext_model.model.get_dimension()}")
-            self.fasttext_model.model.util.reduce_model(self.fasttext_model, 50)
-            print(f"reduced model dimensions to {self.fasttext_model.model.get_dimension()}")
+            # self.fasttext_model.model.util.reduce_model(self.fasttext_model, 50)
+            # print(f"reduced model dimensions to {self.fasttext_model.model.get_dimension()}")
 
         # if not, train it and save it
         else:
-            data = pd.read_csv("IMDB Dataset.csv")
+            data = pd.read_csv(dataset_path)
             # preprocess text and save normalized tokens and sentiment labels
             for review, sentiment in tqdm(zip(data['review'], data['sentiment']), total=len(data)):
                 tokens = review.split()
                 tokens = [token.lower() for token in tokens]
                 self.review_tokens.append(tokens)
                 self.sentiments.append(sentiment)
+                self.review_texts.append(review)
 
             # self.review_tokens = self.review_tokens[:1000]
             # self.sentiments = self.sentiments[:1000]
@@ -58,11 +61,11 @@ class ReviewLoader:
                 for sentiment in self.sentiments:
                     f.write(f"{sentiment}\n")
 
-            self.fasttext_model.prepare("./tokens.txt", mode="train", epochs=train_epochs)
-            self.fasttext_model.prepare(None, mode="save", save=True, path=fasttext_model_path)
-            fasttext.util.reduce_model(self.fasttext_model.model, 50)
-
-            print("fasttext model trained and saved")
+            if not dont_train:
+                self.fasttext_model.prepare("./tokens.txt", mode="train", epochs=train_epochs)
+                self.fasttext_model.prepare(None, mode="save", save=True, path=fasttext_model_path)
+                fasttext.util.reduce_model(self.fasttext_model.model, 50)
+                print("fasttext model trained and saved")
 
     def get_embeddings(self):
         """
