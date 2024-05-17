@@ -5,6 +5,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 from Logic.core.word_embedding.fasttext_model import FastText
+import fasttext
+import fasttext.util
 
 
 class ReviewLoader:
@@ -24,10 +26,13 @@ class ReviewLoader:
         # if we have already trained a fasttext model, use it
         if load_fasttext_model and fasttext_model_path is not None:
             self.fasttext_model.load_model(fasttext_model_path)
+            print(f"loaded model with dimensions {self.fasttext_model.model.get_dimension()}")
+            self.fasttext_model.model.util.reduce_model(self.fasttext_model, 50)
+            print(f"reduced model dimensions to {self.fasttext_model.model.get_dimension()}")
 
         # if not, train it and save it
         else:
-            data = pd.read_csv("IMDB Dataset small.csv")
+            data = pd.read_csv("IMDB Dataset.csv")
             # preprocess text and save normalized tokens and sentiment labels
             for review, sentiment in tqdm(zip(data['review'], data['sentiment']), total=len(data)):
                 tokens = review.split()
@@ -55,6 +60,8 @@ class ReviewLoader:
 
             self.fasttext_model.prepare("./tokens.txt", mode="train", epochs=train_epochs)
             self.fasttext_model.prepare(None, mode="save", save=True, path=fasttext_model_path)
+            fasttext.util.reduce_model(self.fasttext_model.model, 50)
+
             print("fasttext model trained and saved")
 
     def get_embeddings(self):
@@ -70,15 +77,24 @@ class ReviewLoader:
                     self.sentiments += line.rstrip()
 
         for tokens in tqdm(self.review_tokens):
-            embeddings = []
-            for token in tokens:
-                embedding = self.fasttext_model.model[token]  # get embedding of token from model
-                embeddings.append(embedding)
-            self.embeddings.append(embeddings)
+            # embeddings = []
+            sent = " ".join(tokens)
+            self.embeddings.append(self.fasttext_model.get_query_embedding(sent))
+            # for token in tokens:
+            #     embedding = self.fasttext_model.model[token]  # get embedding of token from model
+            #     embeddings.append(embedding)
+            # self.embeddings.append(embeddings)
+
+        # qe = self.fasttext_model.get_query_embedding("my nose is big")
+        # print(f"query embedding is : {qe}")
+        # e = self.fasttext_model.model["verb"]
+        # print(f"embedding of word verb is : {e}")
         pass
 
-    def save_embeddings(self):
-        print("should save embeddings")
+    def save_embeddings(self, path_to_save):
+        with open(path_to_save, 'w', encoding="utf-8") as f:
+            for embedding in self.embeddings[:]:
+                f.write(f"{embedding}\n")
 
     def split_data(self, test_data_ratio=0.2):
         """
@@ -97,15 +113,19 @@ class ReviewLoader:
         x_train, x_test, y_train, y_test = train_test_split(self.embeddings, self.sentiments, test_size=test_data_ratio,
                                                             random_state=40)
 
-        return np.array(x_train, dtype="object"), np.array(x_test, dtype="object"), np.array(y_train, dtype="object"), np.array(y_test, dtype="object")
+        print(f"x_train is {len(x_train)} objects each with shape {len(x_train[0])}")
+        return np.array(x_train, dtype="object"), np.array(x_test, dtype="object"), np.array(y_train,
+                                                                                             dtype="object"), np.array(
+            y_test, dtype="object")
 
 
 if __name__ == "__main__":
     review_loader = ReviewLoader(None)
-    review_loader.load_data(load_fasttext_model=False, fasttext_model_path="./IMDB_dataset_FastText_small.bin")
-    # review_loader.load_data(load_fasttext_model=True, fasttext_model_path="./IMDB_dataset_FastText_small.bin")
+    review_loader.load_data(load_fasttext_model=False, fasttext_model_path="./IMDB_dataset_FastText.bin")
+    # review_loader.load_data(load_fasttext_model=True, fasttext_model_path="./IMDB_dataset_FastText.bin")
     review_loader.get_embeddings()
     print("embeddings loaded")
-    review_loader.save_embeddings()
+    review_loader.save_embeddings(path_to_save='./embeddings.json')
+    print("embeddings saved")
     review_loader.split_data()
     print("data split")
