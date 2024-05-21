@@ -52,12 +52,14 @@ class ReviewLoader:
 
             # now train it and then save it
             # write tokens and sentiments to a txt file for fasttext access
-            with open('./tokens.txt', 'w', encoding="utf-8") as f:
+            token_txt_address = dataset_path.replace(".json", f" tokens.txt")
+            sentiments_txt_address = dataset_path.replace(".json", f" sentiments.txt")
+            with open("tokens.txt", 'w', encoding="utf-8") as f:
                 for tokens in self.review_tokens:
                     for token in tokens:
                         f.write(f"{token} ")
                     f.write("\n")
-            with open('./sentiments.txt', 'w', encoding="utf-8") as f:
+            with open("sentiments.txt", 'w', encoding="utf-8") as f:
                 for sentiment in self.sentiments:
                     f.write(f"{sentiment}\n")
 
@@ -67,15 +69,17 @@ class ReviewLoader:
                 fasttext.util.reduce_model(self.fasttext_model.model, 50)
                 print("fasttext model trained and saved")
 
-    def get_embeddings(self):
+    def get_embeddings(self, address="./IMDB dataset.csv"):
         """
         Get the embeddings for the reviews using the fasttext model.
         """
         if not self.review_tokens:
-            with open("./tokens.txt", encoding="utf-8") as file:
+            token_txt_address = address.replace(".json", f" tokens.txt")
+            sentiments_txt_address = address.replace(".json", f" sentiments.txt")
+            with open("tokens.txt", encoding="utf-8") as file:
                 for line in file:
                     self.review_tokens += line.rstrip().split()
-            with open("./sentiments.txt", encoding="utf-8") as file:
+            with open("sentiments.txt", encoding="utf-8") as file:
                 for line in file:
                     self.sentiments += line.rstrip()
 
