@@ -1,12 +1,13 @@
 import numpy as np
 from tqdm import tqdm
-
-from ..word_embedding.fasttext_model import FastText
+from Logic.core.word_embedding.fasttext_model import FastText
 
 
 class BasicClassifier:
     def __init__(self):
-        raise NotImplementedError()
+        self.fasttext_model = FastText()
+        self.model = None  # Placeholder for the actual classifier model
+        # raise NotImplementedError()
 
     def fit(self, x, y):
         raise NotImplementedError()
@@ -29,5 +30,20 @@ class BasicClassifier:
         float
             The percentage of positive reviews
         """
-        pass
+        embeddings = []
+        for sentence in tqdm(sentences):
+            embedding = self.fasttext_model.get_query_embedding(sentence)
+            embeddings.append(embedding)
+        embeddings = np.array(embeddings)
+
+        # predict the sentiment for each sentence
+        predictions = self.predict(embeddings)
+
+        # calculate the percentage of positive reviews
+        positive_count = np.sum(predictions == 1)  # 1 represents positive sentiment
+        total_count = len(predictions)
+        percent_positive = (positive_count / total_count) * 100
+
+        return percent_positive
+        # pass
 
