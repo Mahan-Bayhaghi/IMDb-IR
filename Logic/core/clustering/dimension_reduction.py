@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import wandb
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
@@ -21,7 +24,9 @@ class DimensionReduction:
         -------
             list: A list of reduced embeddings.
         """
-        pass
+        pca = PCA(n_components=n_components)
+        reduced_emb = pca.fit_transform(embeddings)
+        return reduced_emb
 
     def convert_to_2d_tsne(self, emb_vecs):
         """
@@ -35,7 +40,9 @@ class DimensionReduction:
         --------
             list: A list of 2D vectors.
         """
-        pass
+        tsne_2d = TSNE(n_components=2, random_state=40)
+        reduced_emb = tsne_2d.fit_transform(emb_vecs)
+        return reduced_emb
 
     def wandb_plot_2d_tsne(self, data, project_name, run_name):
         """ This function performs t-SNE (t-Distributed Stochastic Neighbor Embedding) dimensionality reduction on the input data and visualizes the resulting 2D embeddings by logging a scatter plot to Weights & Biases (wandb).
@@ -68,17 +75,21 @@ class DimensionReduction:
 
         # Perform t-SNE dimensionality reduction
         # TODO
+        reduced_emb = self.convert_to_2d_tsne(data)
 
         # Plot the t-SNE embeddings
         # TODO
+        plt.scatter(reduced_emb[:, 0], reduced_emb[:, 1], marker='o')
+        plt.title('t-SNE 2d embeddings')
+        plt.xlabel('TSNE-1')
+        plt.ylabel('TSNE-2')
 
         # Log the plot to wandb
         wandb.log({"t-SNE 2D Embeddings": wandb.Image(plt)})
 
         # Close the plot display window if needed (optional)
         # TODO
-
-    import matplotlib.pyplot as plt
+        plt.close()     # is this really needed ??
 
     def wandb_plot_explained_variance_by_components(self, data, project_name, run_name):
         """
@@ -109,9 +120,18 @@ class DimensionReduction:
 
         # Fit PCA and compute cumulative explained variance ratio
         # TODO
+        pca = PCA()
+        pca.fit(data)
+        explained_variance_ratios = np.cumsum(pca.explained_variance_ratio_)
 
         # Create the plot
         # TODO
+        plt.figure(figsize=(10,6))
+        plt.plot(range(1, len(explained_variance_ratios)+1), explained_variance_ratios, marker='o')
+        plt.title('explained variances by number of components')
+        plt.xlabel('number of components')
+        plt.ylabel('cumulative explained variances ratios')
+        plt.grid(True)
 
         # Initialize wandb
         run = wandb.init(project=project_name, name=run_name)

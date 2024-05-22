@@ -9,11 +9,10 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import KMeans
 from collections import Counter
-from .clustering_metrics import *
-
+from Logic.core.clustering.clustering_metrics import *
+from Logic.core.clustering.dimension_reduction import *
 
 class ClusteringUtils:
-
     def cluster_kmeans(self, emb_vecs: List, n_clusters: int, max_iter: int = 100) -> Tuple[List, List]:
         """
         Clusters input vectors using the K-means method.
@@ -24,7 +23,8 @@ class ClusteringUtils:
             A list of vectors to be clustered.
         n_clusters: int
             The number of clusters to form.
-
+        max_iter: int
+            max_iter of kmeans
         Returns
         --------
         Tuple[List, List]
@@ -32,7 +32,9 @@ class ClusteringUtils:
             1. A list containing the cluster centers.
             2. A list containing the cluster index for each input vector.
         """
-        pass
+        kmeans = KMeans(n_clusters=n_clusters, max_iter=max_iter)
+        kmeans.fit(emb_vecs)
+        return kmeans.cluster_centers_, kmeans.labels_
 
     def get_most_frequent_words(self, documents: List[str], top_n: int = 10) -> List[Tuple[str, int]]:
         """
@@ -50,7 +52,9 @@ class ClusteringUtils:
         List[Tuple[str, int]]
             A list of tuples, where each tuple contains a word and its frequency, sorted in descending order of frequency.
         """
-        pass
+        all_words = [word for document in documents for word in document.split()]
+        words_count = Counter(all_words)
+        return words_count.most_common(top_n)
 
     def cluster_kmeans_WCSS(self, emb_vecs: List, n_clusters: int) -> Tuple[List, List, float]:
         """ This function performs K-means clustering on a list of input vectors and calculates the Within-Cluster Sum of Squares (WCSS) for the resulting clusters.
@@ -76,7 +80,10 @@ class ClusteringUtils:
             2) A list containing the cluster index for each input vector.
             3) The Within-Cluster Sum of Squares (WCSS) value for the clustering.
         """
-        pass
+        kmeans = KMeans(n_clusters=n_clusters)
+        kmeans.fit(emb_vecs)
+        wcss = kmeans.inertia_  # according to sklearn documentation
+        return kmeans.cluster_centers_, kmeans.labels_, wcss
 
     def cluster_hierarchical_single(self, emb_vecs: List) -> List:
         """
@@ -92,7 +99,9 @@ class ClusteringUtils:
         List
             A list containing the cluster index for each input vector.
         """
-        pass
+        clustering = AgglomerativeClustering(linkage="single")
+        clustering.fit(emb_vecs)
+        return clustering.labels_
 
     def cluster_hierarchical_complete(self, emb_vecs: List) -> List:
         """
@@ -108,7 +117,9 @@ class ClusteringUtils:
         List
             A list containing the cluster index for each input vector.
         """
-        pass
+        clustering = AgglomerativeClustering(linkage="complte")
+        clustering.fit(emb_vecs)
+        return clustering.labels_
 
     def cluster_hierarchical_average(self, emb_vecs: List) -> List:
         """
@@ -124,7 +135,9 @@ class ClusteringUtils:
         List
             A list containing the cluster index for each input vector.
         """
-        pass
+        clustering = AgglomerativeClustering(linkage="average")
+        clustering.fit(emb_vecs)
+        return clustering.labels_
 
     def cluster_hierarchical_ward(self, emb_vecs: List) -> List:
         """
@@ -140,7 +153,9 @@ class ClusteringUtils:
         List
             A list containing the cluster index for each input vector.
         """
-        pass
+        clustering = AgglomerativeClustering(linkage="ward")
+        clustering.fit(emb_vecs)
+        return clustering.labels_
 
     def visualize_kmeans_clustering_wandb(self, data, n_clusters, project_name, run_name):
         """ This function performs K-means clustering on the input data and visualizes the resulting clusters by logging a scatter plot to Weights & Biases (wandb).
@@ -175,6 +190,9 @@ class ClusteringUtils:
 
         # Perform K-means clustering
         # TODO
+        centers, labels = self.cluster_kmeans(n_clusters=n_clusters, emb_vecs=data)
+        # dimension_reduction = DimensionReduction()
+        # data_2d = dimension_reduction.convert_to_2d_tnse(data)
 
         # Plot the clusters
         # TODO
