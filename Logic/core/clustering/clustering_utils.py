@@ -190,19 +190,25 @@ class ClusteringUtils:
 
         # Perform K-means clustering
         # TODO
-        centers, labels = self.cluster_kmeans(n_clusters=n_clusters, emb_vecs=data)
-        # dimension_reduction = DimensionReduction()
-        # data_2d = dimension_reduction.convert_to_2d_tnse(data)
+        centers, labels = self.cluster_kmeans(emb_vecs=data, n_clusters=n_clusters)
+
+        reduced_data = DimensionReduction().convert_to_2d_tsne(data)
 
         # Plot the clusters
         # TODO
+        plt.figure(figsize=(10,6))
+        plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=labels, marker='o', cmap='viridis')
+        plt.title(f'K-means clustering with {n_clusters} clusters')
+        plt.xlabel('component 1')
+        plt.ylabel('component 2')
 
         # Log the plot to wandb
         # TODO
+        wandb.log({"K-means Clustering": wandb.Image(plt)})
 
         # Close the plot display window if needed (optional)
         # TODO
-        pass
+        plt.close()
 
     def wandb_plot_hierarchical_clustering_dendrogram(self, data, project_name, linkage_method, run_name):
         """ This function performs hierarchical clustering on the provided data and generates a dendrogram plot, which is then logged to Weights & Biases (wandb).
