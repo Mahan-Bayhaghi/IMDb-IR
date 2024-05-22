@@ -237,3 +237,26 @@ if __name__ == '__main__':
 
     print(deep_model_classifier.prediction_report(x_test, y_test))
 
+# for the following test, I've used small dataset which is first 25k rows of original dataset to reduce the time
+# by increasing size of dataset, classification works on larger data as well
+##################### test results ##########################
+# 100%|██████████| 25000/25000 [00:01<00:00, 14910.63it/s]
+# Read 5M words
+# Number of words:  45612
+# Number of labels: 0
+# Progress: 100.0% words/sec/thread:   16956 lr:  0.000000 avg.loss:  2.234760 ETA:   0h 0m 0s
+# fasttext model trained and saved
+# 100%|██████████| 25000/25000 [00:26<00:00, 940.72it/s]
+# x_train is 20000 objects each with shape 50
+# Using device: cuda
+# 100%|██████████| 50/50 [04:29<00:00,  5.38s/it]
+#   0%|          | 0/157 [00:00<?, ?it/s]Model fitted
+# 100%|██████████| 157/157 [00:00<00:00, 474.01it/s]
+#               precision    recall  f1-score   support
+#
+#            0       0.86      0.88      0.87      2524
+#            1       0.88      0.86      0.87      2476
+#
+#     accuracy                           0.87      5000
+#    macro avg       0.87      0.87      0.87      5000
+# weighted avg       0.87      0.87      0.87      5000
