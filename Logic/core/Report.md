@@ -143,7 +143,78 @@ weighted avg       0.87      0.87      0.87      5000
 ````
 overall, all classifiers successfully reached good f1 scores.
 
+## 8. [Clustering](./clustering)
+The goal of this module is to cluster movies and evaluate it's
+clustering using ground truth label of each movie. the main challenge
+that we are facing is what to choose the label of each movie. The most
+obvious answer seems to be choosing genre of each movie. However,; most
+movies have multiple genres thus clustering will become more complex.
+a simple solution could be choosing only the first genre of each movie
+as its label. the solution seems to cluster movies correctly however 
+for the more complex movies, results will be not quite optimal. Such 
+problem is not due to the correctness of clustering method and is solely
+because the choice we made for label of each movie !!!
 
+`clustering_metrics.py` simply implements tools such as purity score 
+to evaluate our clustering. `dimension_reduction.py` will be used to reduce
+the dimension to achieve a higher performance on the very same data.
+because the model is quite large, this step is needed. we will use PCA reduction
+as well as 2d t-SNE as reducers.
 
+`clustering_utils.py` is our main focus in  this module.
+we have implemented k-means and k-means-wcss and plotted them. we have
+also implemented different hierarchical linkage methods and tested them.
+we also implemented an elbow visualization methods to see if our k-means
+is correct. 
 
+Part of this module requires us to use `WandB` to plot our resutls.
+because of the restrictions, I have disabled all wandb plots and used
+local `matplotlib` figures. it is obvious that logging to wandb using
+VPN is also possible. figures are as follows:
+### elbow visualization
+![alt text](./clustering/figs/elbow.png "Elbow")
+### k-means score across k
+![alt text](./clustering/figs/kmeans_scores.png "Elbow")
+### 5-means clustering clusters
+![alt text](./clustering/figs/5means_clustering.png "Elbow")
+
+the following figures are the hierarchical clustering results
+on first 200 movies using different linkage methods:
+### single linkage
+![alt text](./clustering/figs/single.png "single")
+### average linkage
+![alt text](./clustering/figs/average.png "average")
+### complete linkage
+![alt text](./clustering/figs/complete.png "complete")
+### ward linkage
+![alt text](./clustering/figs/single.png "ward")
+
+the results of clustering on a test run is as follows:
+````
+K-means methods with k = 7
+silhouette_score is 0.1235496275180084
+purity_score is 0.23547738693467338
+rand_score is 0.02992408180473677
+
+linkage methode : single
+silhouette_score is 0.9264934648828059
+purity_score is 0.21306532663316582
+rand_score is 0.005139838955819241
+
+linkage methode : complete
+silhouette_score is 0.9264934648828059
+purity_score is 0.21306532663316582
+rand_score is 0.005139838955819241
+
+linkage methode : average
+silhouette_score is 0.9264934648828059
+purity_score is 0.21306532663316582
+rand_score is 0.005139838955819241
+
+linkage methode : ward
+silhouette_score is 0.9264934648828059
+purity_score is 0.21306532663316582
+rand_score is 0.005139838955819241
+
+````
 
