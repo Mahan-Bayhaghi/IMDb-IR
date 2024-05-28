@@ -29,7 +29,7 @@ class FastText:
         self.method = method
         self.model = None
 
-    def train(self, texts_path, epochs=5):
+    def train(self, texts_path, epochs=5, dimension=100):
         """
         Trains the FastText model with the given texts.
 
@@ -40,7 +40,7 @@ class FastText:
         texts_path : str
             Address to the training file of the FastText model.
         """
-        self.model = fasttext.train_unsupervised(input=texts_path, model=self.method, epoch=epochs)
+        self.model = fasttext.train_unsupervised(input=texts_path, model=self.method, epoch=epochs, dim=dimension)
         # pass
 
     def get_query_embedding(self, query):

@@ -118,7 +118,7 @@ class ClusteringUtils:
         List
             A list containing the cluster index for each input vector.
         """
-        clustering = AgglomerativeClustering(linkage="complte")
+        clustering = AgglomerativeClustering(linkage="complete")
         clustering.fit(emb_vecs)
         return clustering.labels_
 

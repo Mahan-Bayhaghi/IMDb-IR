@@ -44,8 +44,8 @@ class Preprocessor:
         """
         preprocessed_documents = []
         for document in self.documents:
-            fields_to_preprocess = [("summaries", True), ("synopsis", True), ("first_page_summary", False),
-                                    ("genres", True), ("stars", True)]
+            fields_to_preprocess = [("summaries", True), ("synposis", True), ("first_page_summary", False),
+                                    ("genres", True), ("stars", True), ("reviews", True)]
             preprocessed_document = self.preprocess_one_document(document, fields_to_preprocess=fields_to_preprocess)
             preprocessed_documents.append(preprocessed_document)
         return preprocessed_documents
@@ -73,11 +73,18 @@ class Preprocessor:
             for field, is_list in fields_to_preprocess:
                 try:
                     if is_list:
-                        items = document[field]
-                        new_items = []
-                        for item in items:
-                            new_items.append(self.preprocess_one_text(item))
-                        document[field] = new_items
+                        if field == "reviews":
+                            reviews = document[field]
+                            new_items = []
+                            for item in reviews:
+                                new_items.append((self.preprocess_one_text(item[0]), item[1]))
+                                document[field] = new_items
+                        else:
+                            items = document[field]
+                            new_items = []
+                            for item in items:
+                                new_items.append(self.preprocess_one_text(item))
+                            document[field] = new_items
                     else:
                         document[field] = self.preprocess_one_text(document[field])
                 except Exception as e:
@@ -200,8 +207,8 @@ def preprocess_dataset(filepath):
     replace_null_values(all_movies)
     with open(filepath.replace(".json", "_preprocessed.json"), 'w') as file:
         json.dump(preprocessed_movies, file, indent=4)
-    with open(filepath.replace(".json", ".json"), 'w') as file:
-        json.dump(all_movies, file, indent=4)
+    # with open(filepath.replace(".json", ".json"), 'w') as file:
+    #     json.dump(all_movies, file, indent=4)
 
 
 def main():

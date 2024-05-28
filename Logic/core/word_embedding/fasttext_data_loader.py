@@ -143,7 +143,9 @@ class FastTextDataLoader:
         for movie in movies:
             synopses = " ".join(movie['synposis']).replace("\n", "")
             summaries = " ".join(movie['summaries']).replace("\n", "")
-            text = movie['title'] + " " + synopses + " " + summaries  # Concatenate text data
+            just_reviews = [review[0] for review in movie["reviews"]]
+            reviews = " ".join(just_reviews)
+            text = synopses + " " + summaries + " " + reviews  # Concatenate text data
             movie_titles.append(movie['title'])
             label = " ".join(movie['genres'])
             texts.append(text)
