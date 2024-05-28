@@ -1,5 +1,6 @@
-# IMDb-IR project (phase 1) Report
-____________
+# IMDb-IR
+_________
+# phase 1 Report
 ## Mahan Bayhaghi
 #### std number :  `400104834`
 ____________
@@ -12,7 +13,7 @@ ____________
 ____________
 This phase includes following modules that need to be tested :
 
-## 1. [Near-duplicate page detecion](./LSH.py)
+## 1. [Near-duplicate page detecion](./indexer/LSH.py)
 This module will be used to eliminate near-duplicate pages. 
 The implementation is using MinHash algorithm. By using 
 `num_hashes=500` and `num_bands=50` we managed to reach precision
@@ -45,3 +46,27 @@ When an index is loaded, It takes place in a trie tree which would
 cause indexing to become much faster than normal dictionary lookup.
 The results of `Index.py` class will prove that the indexing is in
 fact, much faster than normal indexing. 
+
+_________
+# Phase 2 Report
+_________
+## 4. [Search](./search.py) and [Scorer](./utility/scorer.py)
+Added `get_score_with_unigram_model` and `compute_scores_with_unigram_model` to `scorer.py`.
+These methods simply implement the unigram using naive, bayes and mixture smoothing.
+
+## 5. [Link analysis](./link_analysis)
+implemented `graph.py` which will be used to simulate a graph model
+for the relation of stars and movies. Then implemented `analyzer.py`.
+First, we will make a base set including first 500 movies of whole corpus, 
+then we made the root set. simply iterate over each movie and add all of it's
+stars to our graph. 
+
+
+
+
+
+
+
+
+
+
