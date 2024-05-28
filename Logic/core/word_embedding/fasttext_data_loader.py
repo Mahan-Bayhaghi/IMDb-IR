@@ -1,3 +1,4 @@
+import json
 import re
 
 import pandas as pd
@@ -58,6 +59,7 @@ class FastTextDataLoader:
     It takes the file path to a data source containing movie information (synopses, summaries, reviews, titles, genres) as input.
     The class provides methods to read the data into a pandas DataFrame, pre-process the text data, and create training data (features and labels)
     """
+
     def __init__(self, file_path):
         """
         Initializes the FastTextDataLoader class with the file path to the data source.
@@ -68,7 +70,6 @@ class FastTextDataLoader:
             The path to the file containing movie information.
         """
         self.file_path = file_path
-
 
     def read_data_to_df(self):
         """
@@ -130,11 +131,27 @@ class FastTextDataLoader:
         labels = df['genre']
         return texts, labels
 
-    def create_train_data_for_cluster(self):
-        df = pd.read_csv(self.file_path)
-        texts = df['synopsis'] + ' ' + df['summary'] + ' ' + df['reviews']  # Concatenate text data
-        labels = df['genre']
-        return texts, labels
+    def create_train_data_for_cluster(self, size=None):
+        with open(self.file_path, 'r', encoding='utf-8') as infile:
+            movies = json.load(infile)
+        texts = []
+        labels = []
+        movie_titles = []
+        print(f"len of movies : {len(movies)}")
+        if size is not None:
+            movies = movies[:min(len(movies), size)]
+        for movie in movies:
+            synopses = " ".join(movie['synposis']).replace("\n", "")
+            summaries = " ".join(movie['summaries']).replace("\n", "")
+            text = movie['title'] + " " + synopses + " " + summaries  # Concatenate text data
+            movie_titles.append(movie['title'])
+            label = " ".join(movie['genres'])
+            texts.append(text)
+            labels.append(label)
+        # df = pd.read_csv(self.file_path)
+        # texts = df['title'] + " " + df['synopsis'] + " " + df['summary']     # Concatenate text data
+        # labels = df['genre']
+        return texts, labels, movie_titles
         pass
 
 

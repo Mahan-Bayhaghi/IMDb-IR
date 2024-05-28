@@ -44,7 +44,7 @@ class DimensionReduction:
         reduced_emb = tsne_2d.fit_transform(emb_vecs)
         return reduced_emb
 
-    def wandb_plot_2d_tsne(self, data, project_name, run_name):
+    def wandb_plot_2d_tsne(self, data, project_name, run_name, show_plot=False, plot_wandb=True):
         """ This function performs t-SNE (t-Distributed Stochastic Neighbor Embedding) dimensionality reduction on the input data and visualizes the resulting 2D embeddings by logging a scatter plot to Weights & Biases (wandb).
 
         t-SNE is a widely used technique for visualizing high-dimensional data in a lower-dimensional space, typically 2D. It aims to preserve the local structure of the data points while capturing the global structure as well. This function applies t-SNE to the input data and generates a scatter plot of the resulting 2D embeddings, allowing for visual exploration and analysis of the data's structure and potential clusters.
@@ -83,15 +83,17 @@ class DimensionReduction:
         plt.title('t-SNE 2d embeddings')
         plt.xlabel('TSNE-1')
         plt.ylabel('TSNE-2')
-
+        if show_plot:
+            plt.show()
         # Log the plot to wandb
-        wandb.log({"t-SNE 2D Embeddings": wandb.Image(plt)})
+        if plot_wandb:
+            wandb.log({"t-SNE 2D Embeddings": wandb.Image(plt)})
 
         # Close the plot display window if needed (optional)
         # TODO
         plt.close()     # is this really needed ??
 
-    def wandb_plot_explained_variance_by_components(self, data, project_name, run_name):
+    def wandb_plot_explained_variance_by_components(self, data, project_name, run_name, show_plot=False, plot_wandb=True):
         """
         This function plots the cumulative explained variance ratio against the number of components for a given dataset and logs the plot to Weights & Biases (wandb).
 
@@ -132,12 +134,14 @@ class DimensionReduction:
         plt.xlabel('number of components')
         plt.ylabel('cumulative explained variances ratios')
         plt.grid(True)
-
+        if show_plot:
+            plt.show()
         # Initialize wandb
-        run = wandb.init(project=project_name, name=run_name)
+        if plot_wandb:
+            run = wandb.init(project=project_name, name=run_name)
 
-        # Log the plot to wandb
-        wandb.log({"Explained Variance": wandb.Image(plt)})
+            # Log the plot to wandb
+            wandb.log({"Explained Variance": wandb.Image(plt)})
 
         # Close the plot display window if needed (optional)
         plt.close()

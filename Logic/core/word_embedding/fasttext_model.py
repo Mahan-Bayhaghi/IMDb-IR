@@ -156,7 +156,7 @@ class FastText:
             self.train(dataset_path, epochs=epochs)
         if mode == 'load':
             self.load_model(path)
-        if save:
+        if mode == 'save' or save:
             self.save_model(path)
 
 

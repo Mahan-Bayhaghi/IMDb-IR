@@ -12,6 +12,7 @@ from collections import Counter
 from Logic.core.clustering.clustering_metrics import *
 from Logic.core.clustering.dimension_reduction import *
 
+
 class ClusteringUtils:
     def cluster_kmeans(self, emb_vecs: List, n_clusters: int, max_iter: int = 100) -> Tuple[List, List]:
         """
@@ -157,7 +158,7 @@ class ClusteringUtils:
         clustering.fit(emb_vecs)
         return clustering.labels_
 
-    def visualize_kmeans_clustering_wandb(self, data, n_clusters, project_name, run_name):
+    def visualize_kmeans_clustering_wandb(self, data, n_clusters, project_name, run_name, show_plot=False, plot_to_wandb=True):
         """ This function performs K-means clustering on the input data and visualizes the resulting clusters by logging a scatter plot to Weights & Biases (wandb).
 
         This function applies the K-means algorithm to the input data and generates a scatter plot where each data point is colored according to its assigned cluster.
@@ -172,6 +173,7 @@ class ClusteringUtils:
 
         Parameters
         -----------
+        show_plot: boolean
         data: np.ndarray
             The input data to perform K-means clustering on.
         n_clusters: int
@@ -196,21 +198,24 @@ class ClusteringUtils:
 
         # Plot the clusters
         # TODO
-        plt.figure(figsize=(10,6))
+        plt.figure(figsize=(10, 6))
         plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=labels, marker='o', cmap='viridis')
         plt.title(f'K-means clustering with {n_clusters} clusters')
         plt.xlabel('component 1')
         plt.ylabel('component 2')
-
+        plt.savefig(f'./figs/{n_clusters}means_clustering.png', dpi=600)
+        if show_plot:
+            plt.show()
         # Log the plot to wandb
         # TODO
-        wandb.log({"K-means Clustering": wandb.Image(plt)})
+        if plot_to_wandb:
+            wandb.log({"K-means Clustering": wandb.Image(plt)})
 
         # Close the plot display window if needed (optional)
         # TODO
         plt.close()
 
-    def wandb_plot_hierarchical_clustering_dendrogram(self, data, project_name, linkage_method, run_name):
+    def wandb_plot_hierarchical_clustering_dendrogram(self, data, project_name, linkage_method, run_name, movie_titles, show_plot=False, plot_wandb=True):
         """ This function performs hierarchical clustering on the provided data and generates a dendrogram plot, which is then logged to Weights & Biases (wandb).
 
         The dendrogram is a tree-like diagram that visualizes the hierarchical clustering process. It shows how the data points (or clusters) are progressively merged into larger clusters based on their similarity or distance.
@@ -225,6 +230,9 @@ class ClusteringUtils:
 
         Parameters
         -----------
+        movie_titles
+        plot_wandb
+        show_plot
         data: np.ndarray
             The input data to perform hierarchical clustering on.
         linkage_method: str
@@ -242,26 +250,32 @@ class ClusteringUtils:
         # Perform hierarchical clustering
         # TODO
         dend = linkage(data, linkage_method)
-
+        # print(f"data for dend is : {data[:4]}")
         # Create linkage matrix for dendrogram
         # TODO
-        plt.figure(figsize=(10,6))
-        dendrogram(dend)
+        plt.figure(figsize=(30, 10), dpi=600)
+        dendrogram(dend, labels=movie_titles, leaf_rotation=90)
         plt.title(f'Hierarchical clustering dendrogram ({linkage_method} linkage)')
         plt.xlabel('sample index')
         plt.ylabel('distance')
-
+        if show_plot:
+            plt.tight_layout()
+            plt.savefig(f'./figs/{linkage_method}.png', dpi=600)
+            plt.show()
         # log to wandb !
-        wandb.log({"Hierarchical Clustering Dendrogram": wandb.Image(plt)})
+        if plot_wandb:
+            wandb.log({"Hierarchical Clustering Dendrogram": wandb.Image(plt)})
         plt.close()
 
     def plot_kmeans_cluster_scores(self, embeddings: List, true_labels: List, k_values: List[int], project_name=None,
-                                   run_name=None):
+                                   run_name=None, show_plot=False, plot_to_wandb=True):
         """ This function, using implemented metrics in clustering_metrics, calculates and plots both purity scores and silhouette scores for various numbers of clusters.
         Then using wandb plots the respective scores (each with a different color) for each k value.
 
         Parameters
         -----------
+        show_plot : boolean
+            Show plot to user if true
         embeddings : List
             A list of vectors representing the data points.
         true_labels : List
@@ -283,11 +297,13 @@ class ClusteringUtils:
         # Calculating Silhouette Scores and Purity Scores for different values of k
         for k in k_values:
             # TODO
-            centers, labels = self.cluster_kmeans_WCSS(embeddings, k)
+            centers, labels = self.cluster_kmeans(embeddings, k)
             # Using implemented metrics in clustering_metrics, get the score for each k in k-means clustering
             # and visualize it.
             # TODO
             metrics = ClusteringMetrics()
+            # print(f" k means with k = {k} done")
+            # print(f"there is {len(centers)} centers and {len(labels)} labels")
             silhouette = metrics.silhouette_score(embeddings, cluster_labels=labels)
             purity = metrics.purity_score(true_labels, cluster_labels=labels)
 
@@ -296,20 +312,25 @@ class ClusteringUtils:
 
         # Plotting the scores
         # TODO
-        plt.figure(figsize=(10,6))
+        plt.figure(figsize=(10, 6))
         plt.plot(k_values, silhouette_scores, label='Silhouette Score', marker='o')
         plt.plot(k_values, purity_scores, label='Purity Score', marker='o')
         plt.xlabel('number of clusters (k)')
         plt.ylabel('score')
         plt.title('K-means clustering scores')
         plt.legend()
+        plt.savefig(f'./figs/kmeans_scores.png', dpi=600)
+        if show_plot:
+            plt.show()
 
         # Logging the plot to wandb
-        if project_name and run_name:
-            run = wandb.init(project=project_name, name=run_name)
-            wandb.log({"Cluster Scores": plt})
+        if plot_to_wandb:
+            if project_name and run_name:
+                run = wandb.init(project=project_name, name=run_name)
+                wandb.log({"Cluster Scores": plt})
 
-    def visualize_elbow_method_wcss(self, embeddings: List, k_values: List[int], project_name: str, run_name: str):
+    def visualize_elbow_method_wcss(self, embeddings: List, k_values: List[int], project_name: str, run_name: str
+                                    , show_plot=False, plot_to_wandb=True):
         """ This function implements the elbow method to determine the optimal number of clusters for K-means clustering based on the Within-Cluster Sum of Squares (WCSS).
 
         The elbow method is a heuristic used to determine the optimal number of clusters in K-means clustering. It involves plotting the WCSS values for different values of K (number of clusters) and finding the "elbow" point in the curve, where the marginal improvement in WCSS starts to diminish. This point is considered as the optimal number of clusters.
@@ -322,6 +343,7 @@ class ClusteringUtils:
 
         Parameters
         -----------
+        show_plot: boolean
         embeddings: List
             A list of vectors representing the data points to be clustered.
         k_values: List[int]
@@ -347,12 +369,15 @@ class ClusteringUtils:
 
         # Plot the elbow method
         # TODO
-        plt.figure(figsize=(10,6))
+        plt.figure(figsize=(10, 6))
         plt.plot(k_values, wcss_values, marker='o')
         plt.xlabel('number of clusters (k)')
         plt.ylabel('WCSS')
         plt.title('elbow method for optimal k')
-
+        plt.savefig(f'./figs/elbow.png', dpi=600)
+        if show_plot:
+            plt.show()
         # Log the plot to wandb
-        wandb.log({"Elbow Method": wandb.Image(plt)})
-        plt.close()
+        if plot_to_wandb:
+            wandb.log({"Elbow Method": wandb.Image(plt)})
+            plt.close()
