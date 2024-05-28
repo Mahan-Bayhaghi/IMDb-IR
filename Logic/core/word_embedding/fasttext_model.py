@@ -207,3 +207,5 @@ if __name__ == "__main__":
         f"Similarity between {word1} and {word2} is like similarity between {word3} and {ft_model.analogy(word1, word2, word3)}")
     print(
         f"Similarity between {word1} and {word2} is like similarity between {word3} and {ft_model.detailed_analogy(word1, word2, word3)}")
+    print(
+        f"Similarity between {word1} and {word2} is like similarity between {word3} and {ft_model.detailed_analogy(word2, word1, word3)}")

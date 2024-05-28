@@ -59,12 +59,89 @@ implemented `graph.py` which will be used to simulate a graph model
 for the relation of stars and movies. Then implemented `analyzer.py`.
 First, we will make a base set including first 500 movies of whole corpus, 
 then we made the root set. simply iterate over each movie and add all of it's
-stars to our graph. 
+stars to our graph. Then run the iterative power algorithm to obtain most
+authoritative stars. A sample test runs suggests 
+```
+Top Actors:
+clint eastwood - tom hank - robert de niro - tom cruise - harrison ford
+Top Movies:
+The Rookie - Hang 'Em High - Sudden Impact - Heat - High Plains Drifter
+```
+which makes sense because the mentioned actors are all known and mighty.
 
+## 6. [Word Embeddings](./word_embedding)
+`fasttext_model.py` is used to embed words using fasttext module. 
+the class implements training, saving model and getting query embedding
+as well as implementing word analogy.
 
+`fasttext_data_loader.py` contains a simple preprocess function using nltk.
+as well as methods to load data and also create training data from it. such 
+methods will be used in classification and clustering.
 
+It is notable that the model is trained globally on a 100 dimension and 5 epoches unless
+specified. 
 
+## 7. [Classification](./classification)
+The module contains multiple classifiers. 
+this module has a data loader class which will be used to work with
+sentiments and reviews. it would also split data.
+The simplest classifier is [naive_bayes.py](./classification/naive_bayes.py)
+which uses CountVectorizer instead of our embedding. To test, we will use 
+a sample dataset of 50k reviews from IMDb and try to classify test reviews. 
+The result of naive bayes classification with training size of 0.2 is as follows:
+```
+              precision    recall  f1-score   support
 
+           0       0.84      0.89      0.86      2563
+           1       0.88      0.82      0.85      2437
+
+    accuracy                           0.86      5000
+   macro avg       0.86      0.86      0.86      5000
+weighted avg       0.86      0.86      0.86      5000
+```
+The very next classifier is [knn.py](./classification/knn.py). 
+knn has been implemented from scratch for this classifier.
+the results of  running on first `25K` reviews are as follows:
+````
+              precision    recall  f1-score   support
+
+           0       0.74      0.82      0.78      1220
+           1       0.81      0.73      0.77      1280
+
+    accuracy                           0.77      2500
+   macro avg       0.77      0.77      0.77      2500
+weighted avg       0.78      0.77      0.77      2500
+
+````
+Next classifier is [svm.py](./classification/svm.py). I've used 
+`sklearn.SVC` for this class. results on the same dataset is as follows:
+````
+              precision    recall  f1-score   support
+
+           0       0.87      0.87      0.87      5100
+           1       0.87      0.87      0.87      4900
+
+    accuracy                           0.87     10000
+   macro avg       0.87      0.87      0.87     10000
+weighted avg       0.87      0.87      0.87     10000
+
+````
+at last, we implemented 
+[deep.py](./classification/deep.py) classifier which uses a 
+neural network with 3 hidden layers and ReLu activation functions.
+The training of network is quite typical and used by `torch`. 
+the results are as follows:
+````
+              precision    recall  f1-score   support
+
+           0       0.86      0.88      0.87      2524
+           1       0.88      0.86      0.87      2476
+
+    accuracy                           0.87      5000
+   macro avg       0.87      0.87      0.87      5000
+weighted avg       0.87      0.87      0.87      5000
+````
+overall, all classifiers successfully reached good f1 scores.
 
 
 
