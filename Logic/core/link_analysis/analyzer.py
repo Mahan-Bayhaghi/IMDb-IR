@@ -1,13 +1,9 @@
 import json
 import random
 
-import networkx as nx
-
-from Logic.core.link_analysis.graph import LinkGraph
-from Logic.core.indexer.indexes_enum import Indexes
-from Logic.core.indexer.index_reader import Index_reader
 import Logic.core.path_access as path_access
-from random import sample
+from Logic.core.link_analysis.graph import LinkGraph
+
 
 class LinkAnalyzer:
     def __init__(self, root_set):
@@ -25,7 +21,7 @@ class LinkAnalyzer:
         self.root_set = root_set
         self.graph = LinkGraph()
         self.hubs = []  # stars are hubs
-        self.authorities = []   # ids are authorities
+        self.authorities = []  # ids are authorities
         self.initiate_params()
 
     def initiate_params(self):
@@ -41,7 +37,8 @@ class LinkAnalyzer:
             # TODO
             movie_id = movie["id"]
             self.graph.add_node(movie_id)
-            if movie["stars"] != "N/A":
+            stars = "".join(movie["stars"])
+            if movie["stars"] != "N/A" and stars != "na":
                 for star in movie["stars"]:
                     self.graph.add_node(star)
                     self.graph.add_edge(star, movie_id)
@@ -72,7 +69,8 @@ class LinkAnalyzer:
             if movie_id not in self.authorities:
                 self.authorities.append(movie_id)
 
-            if movie["stars"] != "N/A":
+            stars = "".join(movie["stars"])
+            if movie["stars"] != "N/A" and stars != "na":
                 for star in movie["stars"]:
                     self.graph.add_node(star)
                     self.graph.add_edge(star, movie_id)
@@ -82,7 +80,10 @@ class LinkAnalyzer:
         for movie in corpus:
             movie_id = movie["id"]
             stars = movie["stars"]
-            if stars == "N/A":
+            if "".join(stars) == 'na':
+                # print(f"stars is <{stars}>")
+                stars = []
+            if stars == "N/A" or stars == "n/a" or stars == "na" or stars == 'n' or stars == 'a':
                 stars = []
             for star in stars:
                 # get more movies from known stars in root_set
@@ -133,7 +134,11 @@ if __name__ == "__main__":
     with open(preprocessed_crawled_data_path, 'r') as file:
         corpus = json.load(file)
 
-    root_set = random.sample(corpus, 500)   # random sample of size 500 for root_set
+    all_movie_titles = {}
+    for movie in corpus:
+        all_movie_titles[movie["id"]] = movie["title"]
+
+    root_set = random.sample(corpus, 500)  # random sample of size 500 for root_set
     print("root set sampled")
 
     analyzer = LinkAnalyzer(root_set=root_set)
@@ -143,4 +148,14 @@ if __name__ == "__main__":
     print("Top Actors:")
     print(*actors, sep=' - ')
     print("Top Movies:")
-    print(*movies, sep=' - ')
+    movie_titles = [all_movie_titles[id] for id in movies]
+    print(*movie_titles, sep=' - ')
+
+# test run #
+# root set sampled
+# root set initiated
+# graph expanded
+# Top Actors:
+# clint eastwood - tom hank - robert de niro - tom crui - harrison ford
+# Top Movies:
+# The Rookie - Hang 'Em High - Sudden Impact - Heat - High Plains Drifter
