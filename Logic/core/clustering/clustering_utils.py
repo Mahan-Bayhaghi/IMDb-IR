@@ -356,4 +356,3 @@ class ClusteringUtils:
         # Log the plot to wandb
         wandb.log({"Elbow Method": wandb.Image(plt)})
         plt.close()
-        

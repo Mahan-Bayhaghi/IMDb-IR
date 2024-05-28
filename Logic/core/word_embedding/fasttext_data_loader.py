@@ -130,6 +130,13 @@ class FastTextDataLoader:
         labels = df['genre']
         return texts, labels
 
+    def create_train_data_for_cluster(self):
+        df = pd.read_csv(self.file_path)
+        texts = df['synopsis'] + ' ' + df['summary'] + ' ' + df['reviews']  # Concatenate text data
+        labels = df['genre']
+        return texts, labels
+        pass
+
 
 if __name__ == "__main__":
     path = path_access.path_to_logic() + "core/indexer/saved_indexes/"
