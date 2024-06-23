@@ -55,7 +55,7 @@ def search(
         preferred_genre: str = None,
         unigram_smoothing=None,
         alpha=None,
-        lamda=None,
+        lamda=None
 ):
     """
     Finds relevant documents to query
