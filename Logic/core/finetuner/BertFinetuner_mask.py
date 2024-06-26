@@ -1,3 +1,9 @@
+import json
+
+import torch
+from transformers import BertTokenizer, BertForTokenClassification
+
+
 class BERTFinetuner:
     """
     A class for fine-tuning the BERT model on a movie genre classification task.
@@ -12,18 +18,47 @@ class BERTFinetuner:
             top_n_genres (int): The number of top genres to consider.
         """
         # TODO: Implement initialization logic
+        self.top_n_genres = top_n_genres
+        self.file_path = file_path
+        self.dataset = []
+        self.top_genres = []
+
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        print("tokenizer initialized")
+        self.model = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=top_n_genres, problem_type='multi_label_classification')
+        print("model initialized")
 
     def load_dataset(self):
         """
         Load the dataset from the JSON file.
         """
         # TODO: Implement dataset loading logic
+        with open(self.file_path, 'r') as f:
+            self.dataset = json.load(f)
+        print("dataset loaded")
 
     def preprocess_genre_distribution(self):
         """
         Preprocess the dataset by filtering for the top n genres
         """
         # TODO: Implement genre filtering and visualization logic
+        # first, let's get the count of each genre in the dataset
+        genre_distribution = {}
+        for movie in self.dataset:
+            genres = movie.get('genres', [])
+            for genre in genres:
+                genre_distribution[genre] = genre_distribution.get(genre, 0) + 1
+
+        # now we will sort them in descending order
+        sorted_genres = sorted(genre_distribution.items(), key=lambda x: x[1], reverse=True)
+
+        # we needed only top_n_genres
+        self.top_genres = [genre for genre, count in sorted_genres[:self.top_n_genres]]
+
+        # filter dataset entries to include only the top genres
+        filtered_dataset = [movie for movie in self.dataset if any(genre in movie.get('genre', []) for genre in self.top_genres)]
+        self.dataset = filtered_dataset
+        print(f"Filtered dataset to include top {self.top_n_genres} genres: {self.top_genres}")
 
     def split_dataset(self, test_size=0.3, val_size=0.5):
         """
