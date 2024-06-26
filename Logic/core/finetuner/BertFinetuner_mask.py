@@ -2,6 +2,7 @@ import json
 
 import torch
 from transformers import BertTokenizer, BertForTokenClassification
+from torch.utils.data import Dataset, random_split
 
 
 class BERTFinetuner:
@@ -27,6 +28,11 @@ class BERTFinetuner:
         print("tokenizer initialized")
         self.model = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=top_n_genres, problem_type='multi_label_classification')
         print("model initialized")
+
+        self.train_set = None
+        self.val_set = None
+        self.test_set = None
+
 
     def load_dataset(self):
         """
@@ -56,7 +62,7 @@ class BERTFinetuner:
         self.top_genres = [genre for genre, count in sorted_genres[:self.top_n_genres]]
 
         # filter dataset entries to include only the top genres
-        filtered_dataset = [movie for movie in self.dataset if any(genre in movie.get('genre', []) for genre in self.top_genres)]
+        filtered_dataset = [movie for movie in self.dataset if any(genre in movie.get('genres', []) for genre in self.top_genres)]
         self.dataset = filtered_dataset
         print(f"Filtered dataset to include top {self.top_n_genres} genres: {self.top_genres}")
 
@@ -69,6 +75,17 @@ class BERTFinetuner:
             val_size (float): The proportion of the dataset to include in the validation split.
         """
         # TODO: Implement dataset splitting logic
+        # split dataset sizes
+        total_len = len(self.dataset)
+        test_len = int(total_len * test_size)
+        val_len = int(total_len * val_size)
+        train_len = total_len - test_len - val_len
+        train_dataset, val_dataset, test_dataset = random_split(self.dataset, [train_len, val_len, test_len])
+
+        self.train_set = train_dataset
+        self.val_set = val_dataset
+        self.test_set = test_dataset
+        print(f"Dataset split: Train={len(train_dataset)}, Validation={len(val_dataset)}, Test={len(test_dataset)}")
 
     def create_dataset(self, encodings, labels):
         """
@@ -82,6 +99,7 @@ class BERTFinetuner:
             IMDbDataset: A PyTorch dataset object.
         """
         # TODO: Implement dataset creation logic
+        return IMDbDataset(encodings, labels)
 
     def fine_tune_bert(self, epochs=5, batch_size=16, warmup_steps=500, weight_decay=0.01):
         """
@@ -122,6 +140,7 @@ class BERTFinetuner:
         """
         # TODO: Implement model saving logic
 
+
 class IMDbDataset(torch.utils.data.Dataset):
     """
     A PyTorch dataset for the movie genre classification task.
@@ -136,6 +155,8 @@ class IMDbDataset(torch.utils.data.Dataset):
             labels (list): The corresponding labels.
         """
         # TODO: Implement initialization logic
+        self.encodings = encodings
+        self.labels = labels
 
     def __getitem__(self, idx):
         """
@@ -148,6 +169,13 @@ class IMDbDataset(torch.utils.data.Dataset):
             dict: A dictionary containing the input encodings and labels.
         """
         # TODO: Implement item retrieval logic
+        input_ids = torch.tensor(self.encodings['input_ids'][idx])
+        attention_mask = torch.tensor(self.encodings['attention_mask'][idx])
+        label = torch.tensor(self.labels[idx])
+
+        return {'input_ids': input_ids,
+                'attention_mask': attention_mask,
+                'label': label}
 
     def __len__(self):
         """
@@ -157,3 +185,4 @@ class IMDbDataset(torch.utils.data.Dataset):
             int: The number of items in the dataset.
         """
         # TODO: Implement length computation logic
+        return len(self.labels)

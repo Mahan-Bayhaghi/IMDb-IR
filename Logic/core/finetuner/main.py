@@ -12,13 +12,13 @@ if __name__ == '__main__':
 
     # Preprocess genre distribution
     bert_finetuner.preprocess_genre_distribution()
-    #
-    # # Split the dataset
-    # bert_finetuner.split_dataset()
-    #
-    # # Fine-tune BERT model
+
+    # Split the dataset
+    bert_finetuner.split_dataset()
+
+    # Fine-tune BERT model
     # bert_finetuner.fine_tune_bert()
-    #
+
     # # Compute metrics
     # bert_finetuner.evaluate_model()
     #
