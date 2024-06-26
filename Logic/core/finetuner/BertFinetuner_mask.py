@@ -2,7 +2,8 @@ import json
 
 import torch
 from transformers import BertTokenizer, BertForTokenClassification
-from torch.utils.data import Dataset, random_split
+from torch.utils.data import Dataset, random_split, DataLoader
+from transformers import AdamW, get_linear_schedule_with_warmup
 
 
 class BERTFinetuner:
@@ -112,6 +113,48 @@ class BERTFinetuner:
             weight_decay (float): The strength of weight decay regularization.
         """
         # TODO: Implement BERT fine-tuning logic
+        train_loader = DataLoader(dataset=self.train_set, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(dataset=self.val_set, batch_size=batch_size, shuffle=False)
+
+        # setting up optimizer and scheduler
+        optimizer = AdamW(self.model.parameters(), lr=2e-5, weight_decay=weight_decay)
+        training_steps = len(train_loader) * epochs
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=training_steps)
+
+        # training loop of fine-tuning
+        for epoch in range(epochs):
+            self.model.train()
+            train_loss = 0.0
+
+            for batch in train_loader:
+                input_ids = batch['input_ids']
+                attention_mask = batch['attention_mask']
+                labels = batch['labels']
+                optimizer.zero_grad()
+                # forward pass
+                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+                loss = outputs.loss
+                loss.backward()
+                optimizer.step()
+                train_loss += loss.item()
+                scheduler.step()
+
+            avg_loss = train_loss / len(train_loader)
+            print(f"Epoch {epoch + 1}/{epochs} - Train Loss: {avg_loss:.4f}")
+
+            # validation
+            self.model.eval()
+            val_loss = 0.0
+            with torch.no_grad():
+                for batch in val_loader:
+                    input_ids = batch['input_ids']
+                    attention_mask = batch['attention_mask']
+                    labels = batch['labels']
+                    outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+                    val_loss += outputs.loss.item()
+                avg_val_loss = val_loss / len(val_loader)
+                print(f"Epoch {epoch + 1}/{epochs} - Validation Loss: {avg_val_loss:.4f}")
+        print("Finished Fine-tuning")
 
     def compute_metrics(self, pred):
         """

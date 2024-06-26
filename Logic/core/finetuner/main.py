@@ -17,7 +17,7 @@ if __name__ == '__main__':
     bert_finetuner.split_dataset()
 
     # Fine-tune BERT model
-    # bert_finetuner.fine_tune_bert()
+    bert_finetuner.fine_tune_bert()
 
     # # Compute metrics
     # bert_finetuner.evaluate_model()
