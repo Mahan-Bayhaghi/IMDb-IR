@@ -1,9 +1,11 @@
 import json
 import torch
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from matplotlib import pyplot as plt
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
 from torch.utils.data import Dataset, random_split
 from transformers import BertTokenizer, BertForSequenceClassification, TrainingArguments, Trainer
+import seaborn as sns
 
 
 class BERTFinetuner:
@@ -47,7 +49,7 @@ class BERTFinetuner:
             if len(movie['genres']) > 0 and movie['first_page_summary'] is not None:
                 movie_pair = {'genres': movie['genres'], 'first_page_summary': movie['first_page_summary']}
                 self.dataset.append(movie_pair)
-        self.dataset = self.dataset[:50]
+        self.dataset = self.dataset[:500]
         print("dataset loaded")
 
     def preprocess_genre_distribution(self):
@@ -193,7 +195,30 @@ class BERTFinetuner:
 
         trainer = Trainer(model=self.model, compute_metrics=self.compute_metrics)
         results = trainer.evaluate(test_dataset)
-        # print(f"Test set evaluation results: {results}")
+        print(f"Test set evaluation results: {results}")
+        predictions = trainer.predict(test_dataset).predictions
+        probabilities = torch.sigmoid(torch.tensor(predictions))
+        predicted_labels = (probabilities > 0.5).cpu().numpy()
+
+        # Compute the confusion matrix
+        cm = confusion_matrix(test_labels.argmax(axis=1), predicted_labels.argmax(axis=1))
+
+        # Visualize the results and confusion matrix
+        self.plot_confusion_matrix(cm)
+
+    def plot_confusion_matrix(self, cm):
+        """
+        Plot the confusion matrix using Seaborn.
+
+        Args:
+            cm (ndarray): The confusion matrix.
+        """
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self.top_genres, yticklabels=self.top_genres)
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.title('Confusion Matrix')
+        plt.show()
 
     def save_model(self, model_name):
         """
