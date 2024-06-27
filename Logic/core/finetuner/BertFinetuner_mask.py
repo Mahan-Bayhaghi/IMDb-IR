@@ -1,7 +1,7 @@
 import json
 import torch
 from matplotlib import pyplot as plt
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix, multilabel_confusion_matrix
 from sklearn.preprocessing import MultiLabelBinarizer
 from torch.utils.data import Dataset, random_split
 from transformers import BertTokenizer, BertForSequenceClassification, TrainingArguments, Trainer
@@ -49,7 +49,7 @@ class BERTFinetuner:
             if len(movie['genres']) > 0 and movie['first_page_summary'] is not None:
                 movie_pair = {'genres': movie['genres'], 'first_page_summary': movie['first_page_summary']}
                 self.dataset.append(movie_pair)
-        self.dataset = self.dataset[:1000]
+        self.dataset = self.dataset[:2000]
         print("dataset loaded")
 
     def preprocess_genre_distribution(self):
@@ -112,7 +112,7 @@ class BERTFinetuner:
         dataset_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in dataset]
         return dataset_texts, dataset_labels
 
-    def fine_tune_bert(self, epochs=20, batch_size=16, warmup_steps=500, weight_decay=0.01):
+    def fine_tune_bert(self, epochs=10, batch_size=16, warmup_steps=500, weight_decay=0.01):
         """
         Fine-tune the BERT model on the training data.
 
@@ -201,10 +201,32 @@ class BERTFinetuner:
         predicted_labels = (probabilities > 0.5).cpu().numpy()
 
         # Compute the confusion matrix
-        cm = confusion_matrix(test_labels.argmax(axis=1), predicted_labels.argmax(axis=1))
-
+        # cm = confusion_matrix(test_labels.argmax(axis=1), predicted_labels.argmax(axis=1))
         # Visualize the results and confusion matrix
-        self.plot_confusion_matrix(cm)
+        # self.plot_confusion_matrix(cm)
+        mcm = multilabel_confusion_matrix(y_true=test_labels, y_pred=predicted_labels)
+        # Visualize the results and confusion matrix
+        self.plot_multilabel_confusion_matrix(mcm)
+
+    def plot_multilabel_confusion_matrix(self, mcm):
+        """
+        Plot the multi-label confusion matrix using Seaborn.
+
+        Args:
+            mcm (ndarray): The multi-label confusion matrix.
+        """
+        fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+        axes = axes.flatten()
+        for i, cm in enumerate(mcm):
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[i],
+                        xticklabels=['Not ' + self.top_genres[i], self.top_genres[i]],
+                        yticklabels=['Not ' + self.top_genres[i], self.top_genres[i]])
+            axes[i].set_xlabel('Predicted')
+            axes[i].set_ylabel('True')
+            axes[i].set_title(f'Confusion Matrix for {self.top_genres[i]}')
+        plt.tight_layout()
+        plt.savefig('multilabel_confusion_matrix.png')
+        plt.show()
 
     def plot_confusion_matrix(self, cm):
         """
@@ -219,6 +241,8 @@ class BERTFinetuner:
         plt.ylabel('True')
         plt.title('Confusion Matrix')
         plt.show()
+        plt.savefig('confusion_matrix.png')
+
 
     def save_model(self, model_name):
         """
@@ -270,3 +294,45 @@ class IMDbDataset(torch.utils.data.Dataset):
             int: The number of items in the dataset.
         """
         return len(self.labels)
+
+# finished evaluation
+# wandb:
+# wandb: Run history:
+# wandb:           eval/Accuracy ▁▃▆▅▇▅█▆▅▆▃
+# wandb:           eval/F1-Score ▁▄▆▇▇██▇██▆
+# wandb:          eval/Precision ▁▆▇▇███▇██▆
+# wandb:             eval/Recall ▁▃▆▆▇▇█▇██▆
+# wandb:               eval/loss █▅▂▁▂▂▃▇██▂
+# wandb:            eval/runtime ▁▁▁▁▁▁▁▁▁▁█
+# wandb: eval/samples_per_second ▇█████▇▇▇█▁
+# wandb:   eval/steps_per_second ▁▁▁▁▁▁▁▁▁▁█
+# wandb:             train/epoch ▁▂▃▃▄▅▅▆▆▇██
+# wandb:       train/global_step ▂▂▃▄▅▅▅▆▇▇██▁
+# wandb:         train/grad_norm ▁
+# wandb:     train/learning_rate ▁
+# wandb:              train/loss ▁
+# wandb:
+# wandb: Run summary:
+# wandb:            eval/Accuracy 0.3354
+# wandb:            eval/F1-Score 0.63551
+# wandb:           eval/Precision 0.69255
+# wandb:              eval/Recall 0.64389
+# wandb:                eval/loss 0.47034
+# wandb:             eval/runtime 2.1449
+# wandb:  eval/samples_per_second 150.123
+# wandb:    eval/steps_per_second 19.115
+# wandb:               total_flos 360307406336640.0
+# wandb:              train/epoch 10.0
+# wandb:        train/global_step 0
+# wandb:          train/grad_norm 6.57815
+# wandb:      train/learning_rate 5e-05
+# wandb:               train/loss 0.4339
+# wandb:               train_loss 0.31472
+# wandb:            train_runtime 278.6262
+# wandb: train_samples_per_second 44.935
+# wandb:   train_steps_per_second 2.835
+# wandb:
+# wandb:  View run ./results at: https://wandb.ai/marlicartworks/huggingface/runs/w0wpyyur
+# wandb:  View project at: https://wandb.ai/marlicartworks/huggingface
+# wandb: Synced 5 W&B file(s), 0 media file(s), 2 artifact file(s) and 0 other file(s)
+# wandb: Find logs at: .\wandb\run-20240627_222822-w0wpyyur\logs
