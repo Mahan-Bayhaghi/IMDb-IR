@@ -49,7 +49,7 @@ class BERTFinetuner:
             if len(movie['genres']) > 0 and movie['first_page_summary'] is not None:
                 movie_pair = {'genres': movie['genres'], 'first_page_summary': movie['first_page_summary']}
                 self.dataset.append(movie_pair)
-        self.dataset = self.dataset[:500]
+        self.dataset = self.dataset[:1000]
         print("dataset loaded")
 
     def preprocess_genre_distribution(self):
@@ -72,7 +72,7 @@ class BERTFinetuner:
         self.dataset = filtered_dataset
         print(f"Filtered dataset to include top {self.top_n_genres} genres: {self.top_genres}")
 
-    def split_dataset(self, test_size=0.3, val_size=0.5):
+    def split_dataset(self, test_size=0.3, val_size=0.4):
         """
         Split the dataset into train, validation, and test sets.
 
@@ -112,7 +112,7 @@ class BERTFinetuner:
         dataset_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in dataset]
         return dataset_texts, dataset_labels
 
-    def fine_tune_bert(self, epochs=5, batch_size=16, warmup_steps=500, weight_decay=0.01):
+    def fine_tune_bert(self, epochs=20, batch_size=16, warmup_steps=500, weight_decay=0.01):
         """
         Fine-tune the BERT model on the training data.
 
