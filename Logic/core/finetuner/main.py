@@ -20,7 +20,8 @@ if __name__ == '__main__':
     bert_finetuner.fine_tune_bert()
 
     # # Compute metrics
-    # bert_finetuner.evaluate_model()
+    bert_finetuner.evaluate_model()
+    print("finished evaluation")
     #
     # # Save the model (optional)
-    # bert_finetuner.save_model('Movie_Genre_Classifier')
+    bert_finetuner.save_model('Movie_Genre_Classifier')

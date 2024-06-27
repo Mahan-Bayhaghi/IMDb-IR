@@ -1,7 +1,10 @@
 import json
 
+import numpy as np
 import torch
-from transformers import BertTokenizer, BertForTokenClassification
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.preprocessing import MultiLabelBinarizer
+from transformers import BertTokenizer, BertForSequenceClassification, TrainingArguments, Trainer
 from torch.utils.data import Dataset, random_split, DataLoader
 from transformers import AdamW, get_linear_schedule_with_warmup
 
@@ -27,13 +30,14 @@ class BERTFinetuner:
 
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         print("tokenizer initialized")
-        self.model = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=top_n_genres, problem_type='multi_label_classification')
+        self.model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=top_n_genres, problem_type="multi_label_classification")
         print("model initialized")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
 
         self.train_set = None
         self.val_set = None
         self.test_set = None
-
 
     def load_dataset(self):
         """
@@ -41,7 +45,12 @@ class BERTFinetuner:
         """
         # TODO: Implement dataset loading logic
         with open(self.file_path, 'r') as f:
-            self.dataset = json.load(f)
+            dataset = json.load(f)
+        for movie in dataset:
+            if len(movie['genres']) > 0 and movie['first_page_summary'] is not None:
+                movie_pair = {'genres': movie['genres'], 'first_page_summary': movie['first_page_summary']}
+                self.dataset.append(movie_pair)
+        self.dataset = self.dataset[:50]
         print("dataset loaded")
 
     def preprocess_genre_distribution(self):
@@ -58,12 +67,11 @@ class BERTFinetuner:
 
         # now we will sort them in descending order
         sorted_genres = sorted(genre_distribution.items(), key=lambda x: x[1], reverse=True)
-
         # we needed only top_n_genres
         self.top_genres = [genre for genre, count in sorted_genres[:self.top_n_genres]]
-
         # filter dataset entries to include only the top genres
         filtered_dataset = [movie for movie in self.dataset if any(genre in movie.get('genres', []) for genre in self.top_genres)]
+        print(f"filtered dataset is : {filtered_dataset[:4]}")
         self.dataset = filtered_dataset
         print(f"Filtered dataset to include top {self.top_n_genres} genres: {self.top_genres}")
 
@@ -79,14 +87,16 @@ class BERTFinetuner:
         # split dataset sizes
         total_len = len(self.dataset)
         test_len = int(total_len * test_size)
-        val_len = int(total_len * val_size)
-        train_len = total_len - test_len - val_len
-        train_dataset, val_dataset, test_dataset = random_split(self.dataset, [train_len, val_len, test_len])
+        train_len = int(total_len - test_len)
+        train_dataset, test_dataset = random_split(self.dataset, [train_len, test_len])
+        val_len = int(len(test_dataset) * val_size)
+        test_len = int(len(test_dataset) - val_len)
+        val_dataset, test_dataset = random_split(test_dataset, [val_len, test_len])
 
         self.train_set = train_dataset
         self.val_set = val_dataset
         self.test_set = test_dataset
-        print(f"Dataset split: Train={len(train_dataset)}, Validation={len(val_dataset)}, Test={len(test_dataset)}")
+        print(f"Dataset split: Train={len(self.train_set)}, Validation={len(self.val_set)}, Test={len(self.test_set)}")
 
     def create_dataset(self, encodings, labels):
         """
@@ -100,7 +110,7 @@ class BERTFinetuner:
             IMDbDataset: A PyTorch dataset object.
         """
         # TODO: Implement dataset creation logic
-        return IMDbDataset(encodings, labels)
+        return IMDbDataset(encodings=encodings, labels=labels)
 
     def fine_tune_bert(self, epochs=5, batch_size=16, warmup_steps=500, weight_decay=0.01):
         """
@@ -113,47 +123,56 @@ class BERTFinetuner:
             weight_decay (float): The strength of weight decay regularization.
         """
         # TODO: Implement BERT fine-tuning logic
-        train_loader = DataLoader(dataset=self.train_set, batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(dataset=self.val_set, batch_size=batch_size, shuffle=False)
 
-        # setting up optimizer and scheduler
-        optimizer = AdamW(self.model.parameters(), lr=2e-5, weight_decay=weight_decay)
-        training_steps = len(train_loader) * epochs
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=training_steps)
+        training_texts = [movie['first_page_summary'] for movie in self.train_set]
+        training_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in self.train_set]
 
-        # training loop of fine-tuning
-        for epoch in range(epochs):
-            self.model.train()
-            train_loss = 0.0
+        print(f"len of training texts : {len(training_texts)}")
+        print(f"len of training labels: {len(training_labels)}")
 
-            for batch in train_loader:
-                input_ids = batch['input_ids']
-                attention_mask = batch['attention_mask']
-                labels = batch['labels']
-                optimizer.zero_grad()
-                # forward pass
-                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-                loss = outputs.loss
-                loss.backward()
-                optimizer.step()
-                train_loss += loss.item()
-                scheduler.step()
+        val_texts = [movie['first_page_summary'] for movie in self.val_set]
+        val_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in self.val_set]
 
-            avg_loss = train_loss / len(train_loader)
-            print(f"Epoch {epoch + 1}/{epochs} - Train Loss: {avg_loss:.4f}")
+        mlb = MultiLabelBinarizer(classes=self.top_genres)
+        training_labels = mlb.fit_transform(training_labels)
+        print("training labels : ", training_labels[:4])
+        val_labels = mlb.transform(val_labels)
+        print("validation labels : ", val_labels[:4])
 
-            # validation
-            self.model.eval()
-            val_loss = 0.0
-            with torch.no_grad():
-                for batch in val_loader:
-                    input_ids = batch['input_ids']
-                    attention_mask = batch['attention_mask']
-                    labels = batch['labels']
-                    outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-                    val_loss += outputs.loss.item()
-                avg_val_loss = val_loss / len(val_loader)
-                print(f"Epoch {epoch + 1}/{epochs} - Validation Loss: {avg_val_loss:.4f}")
+        training_encodings = self.tokenizer(training_texts, truncation=True, padding=True, max_length=512)
+        print("training encodings : ", training_encodings[:4])
+        val_encodings = self.tokenizer(val_texts, truncation=True, padding=True, max_length=512)
+        print("validation encodings:", val_encodings[:4])
+
+        training_set = self.create_dataset(training_encodings, training_labels)
+        val_set = self.create_dataset(val_encodings, val_labels)
+
+        # defining training arguments
+        training_args = TrainingArguments(
+            output_dir='./results',
+            num_train_epochs=epochs,
+            per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
+            warmup_steps=warmup_steps,
+            weight_decay=weight_decay,
+            evaluation_strategy="epoch",
+            save_strategy="epoch",
+            load_best_model_at_end=True,
+            # metric_for_best_model="f1",
+            # greater_is_better=True
+        )
+        # our main trainer
+        trainer = Trainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=training_set,
+            eval_dataset=val_set,
+            compute_metrics=self.compute_metrics
+        )
+        print(f"train_set set is {training_set}")
+        print(f"val set is {val_set}")
+
+        trainer.train()
         print("Finished Fine-tuning")
 
     def compute_metrics(self, pred):
@@ -167,12 +186,34 @@ class BERTFinetuner:
             dict: A dictionary containing the computed metrics.
         """
         # TODO: Implement metric computation logic
+        preds, labels = pred.predictions, pred.label_ids
+        probabilities = torch.sigmoid(torch.tensor(preds))
+        predictions = (probabilities > 0.5).cpu().numpy()
+        precision, recall, f1, _ = precision_recall_fscore_support(y_true=labels, y_pred=predictions, average='samples')
+        return {
+            'Accuracy': accuracy_score(labels, predictions),
+            'Precision': precision,
+            'Recall': recall,
+            'F1-Score': f1
+        }
 
     def evaluate_model(self):
         """
         Evaluate the fine-tuned model on the test set.
         """
         # TODO: Implement model evaluation logic
+        test_text = [movie['first_page_summary'] for movie in self.test_set]
+        test_encodings = self.tokenizer(test_text, truncation=True, padding=True, max_length=512)
+
+        test_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in self.test_set]
+        mlb = MultiLabelBinarizer(classes=self.top_genres)
+        test_labels = mlb.fit_transform(test_labels)
+
+        test_dataset = self.create_dataset(test_encodings, test_labels)
+
+        trainer = Trainer(model=self.model, compute_metrics=self.compute_metrics)
+        results = trainer.evaluate(test_dataset)
+        print(f"Test set evaluation results: {results}")
 
     def save_model(self, model_name):
         """
@@ -182,6 +223,8 @@ class BERTFinetuner:
             model_name (str): The name of the model on the Hugging Face Hub.
         """
         # TODO: Implement model saving logic
+        self.model.save_pretrained(model_name)
+        self.tokenizer.save_pretrained(model_name)
 
 
 class IMDbDataset(torch.utils.data.Dataset):
@@ -197,7 +240,6 @@ class IMDbDataset(torch.utils.data.Dataset):
             encodings (dict): The tokenized input encodings.
             labels (list): The corresponding labels.
         """
-        # TODO: Implement initialization logic
         self.encodings = encodings
         self.labels = labels
 
@@ -211,14 +253,9 @@ class IMDbDataset(torch.utils.data.Dataset):
         Returns:
             dict: A dictionary containing the input encodings and labels.
         """
-        # TODO: Implement item retrieval logic
-        input_ids = torch.tensor(self.encodings['input_ids'][idx])
-        attention_mask = torch.tensor(self.encodings['attention_mask'][idx])
-        label = torch.tensor(self.labels[idx])
-
-        return {'input_ids': input_ids,
-                'attention_mask': attention_mask,
-                'label': label}
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx], dtype=torch.float)
+        return item
 
     def __len__(self):
         """
@@ -227,5 +264,4 @@ class IMDbDataset(torch.utils.data.Dataset):
         Returns:
             int: The number of items in the dataset.
         """
-        # TODO: Implement length computation logic
         return len(self.labels)
