@@ -1,12 +1,9 @@
 import json
-
-import numpy as np
 import torch
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from sklearn.preprocessing import MultiLabelBinarizer
+from torch.utils.data import Dataset, random_split
 from transformers import BertTokenizer, BertForSequenceClassification, TrainingArguments, Trainer
-from torch.utils.data import Dataset, random_split, DataLoader
-from transformers import AdamW, get_linear_schedule_with_warmup
 
 
 class BERTFinetuner:
@@ -33,8 +30,8 @@ class BERTFinetuner:
         self.model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=top_n_genres, problem_type="multi_label_classification")
         print("model initialized")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"device is {self.device}")
         self.model.to(self.device)
-
         self.train_set = None
         self.val_set = None
         self.test_set = None
@@ -57,7 +54,6 @@ class BERTFinetuner:
         """
         Preprocess the dataset by filtering for the top n genres
         """
-        # TODO: Implement genre filtering and visualization logic
         # first, let's get the count of each genre in the dataset
         genre_distribution = {}
         for movie in self.dataset:
@@ -71,7 +67,6 @@ class BERTFinetuner:
         self.top_genres = [genre for genre, count in sorted_genres[:self.top_n_genres]]
         # filter dataset entries to include only the top genres
         filtered_dataset = [movie for movie in self.dataset if any(genre in movie.get('genres', []) for genre in self.top_genres)]
-        print(f"filtered dataset is : {filtered_dataset[:4]}")
         self.dataset = filtered_dataset
         print(f"Filtered dataset to include top {self.top_n_genres} genres: {self.top_genres}")
 
@@ -83,7 +78,6 @@ class BERTFinetuner:
             test_size (float): The proportion of the dataset to include in the test split.
             val_size (float): The proportion of the dataset to include in the validation split.
         """
-        # TODO: Implement dataset splitting logic
         # split dataset sizes
         total_len = len(self.dataset)
         test_len = int(total_len * test_size)
@@ -109,8 +103,12 @@ class BERTFinetuner:
         Returns:
             IMDbDataset: A PyTorch dataset object.
         """
-        # TODO: Implement dataset creation logic
         return IMDbDataset(encodings=encodings, labels=labels)
+
+    def extract_text_and_labels(self, dataset):
+        dataset_texts = [movie['first_page_summary'] for movie in dataset]
+        dataset_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in dataset]
+        return dataset_texts, dataset_labels
 
     def fine_tune_bert(self, epochs=5, batch_size=16, warmup_steps=500, weight_decay=0.01):
         """
@@ -122,29 +120,18 @@ class BERTFinetuner:
             warmup_steps (int): The number of warmup steps for the learning rate scheduler.
             weight_decay (float): The strength of weight decay regularization.
         """
-        # TODO: Implement BERT fine-tuning logic
-
-        training_texts = [movie['first_page_summary'] for movie in self.train_set]
-        training_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in self.train_set]
-
-        print(f"len of training texts : {len(training_texts)}")
-        print(f"len of training labels: {len(training_labels)}")
-
-        val_texts = [movie['first_page_summary'] for movie in self.val_set]
-        val_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in self.val_set]
-
         mlb = MultiLabelBinarizer(classes=self.top_genres)
+
+        training_texts, training_labels = self.extract_text_and_labels(self.train_set)
         training_labels = mlb.fit_transform(training_labels)
-        print("training labels : ", training_labels[:4])
-        val_labels = mlb.transform(val_labels)
-        print("validation labels : ", val_labels[:4])
-
         training_encodings = self.tokenizer(training_texts, truncation=True, padding=True, max_length=512)
-        print("training encodings : ", training_encodings[:4])
-        val_encodings = self.tokenizer(val_texts, truncation=True, padding=True, max_length=512)
-        print("validation encodings:", val_encodings[:4])
-
+        # print("training encodings : ", training_encodings[:4])
         training_set = self.create_dataset(training_encodings, training_labels)
+
+        val_texts, val_labels = self.extract_text_and_labels(self.val_set)
+        val_labels = mlb.transform(val_labels)
+        val_encodings = self.tokenizer(val_texts, truncation=True, padding=True, max_length=512)
+        # print("validation encodings:", val_encodings[:4])
         val_set = self.create_dataset(val_encodings, val_labels)
 
         # defining training arguments
@@ -169,9 +156,6 @@ class BERTFinetuner:
             eval_dataset=val_set,
             compute_metrics=self.compute_metrics
         )
-        print(f"train_set set is {training_set}")
-        print(f"val set is {val_set}")
-
         trainer.train()
         print("Finished Fine-tuning")
 
@@ -185,35 +169,31 @@ class BERTFinetuner:
         Returns:
             dict: A dictionary containing the computed metrics.
         """
-        # TODO: Implement metric computation logic
-        preds, labels = pred.predictions, pred.label_ids
-        probabilities = torch.sigmoid(torch.tensor(preds))
+        predictions, labels = pred.predictions, pred.label_ids
+        probabilities = torch.sigmoid(torch.tensor(predictions))    # softmax
         predictions = (probabilities > 0.5).cpu().numpy()
         precision, recall, f1, _ = precision_recall_fscore_support(y_true=labels, y_pred=predictions, average='samples')
         return {
-            'Accuracy': accuracy_score(labels, predictions),
+            'F1-Score': f1,
             'Precision': precision,
             'Recall': recall,
-            'F1-Score': f1
+            'Accuracy': accuracy_score(labels, predictions),
         }
 
     def evaluate_model(self):
         """
         Evaluate the fine-tuned model on the test set.
         """
-        # TODO: Implement model evaluation logic
-        test_text = [movie['first_page_summary'] for movie in self.test_set]
-        test_encodings = self.tokenizer(test_text, truncation=True, padding=True, max_length=512)
-
-        test_labels = [list(set(movie['genres']).intersection(set(self.top_genres))) for movie in self.test_set]
         mlb = MultiLabelBinarizer(classes=self.top_genres)
-        test_labels = mlb.fit_transform(test_labels)
 
+        test_text, test_labels = self.extract_text_and_labels(self.test_set)
+        test_encodings = self.tokenizer(test_text, truncation=True, padding=True, max_length=512)
+        test_labels = mlb.fit_transform(test_labels)
         test_dataset = self.create_dataset(test_encodings, test_labels)
 
         trainer = Trainer(model=self.model, compute_metrics=self.compute_metrics)
         results = trainer.evaluate(test_dataset)
-        print(f"Test set evaluation results: {results}")
+        # print(f"Test set evaluation results: {results}")
 
     def save_model(self, model_name):
         """
